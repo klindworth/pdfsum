@@ -51,7 +51,7 @@ set(FORMS
 	MainDialog.ui
 	ExportDialog.ui
 	DocumentMarkerGui.ui
-	autobox.ui
+	autocutdialog.ui
 )
 
 add_definitions(${QT_DEFINITIONS})

@@ -25,7 +25,7 @@
 #include <QDir>
 #include <QQueue>
 #include <memory>
-#include "ui_autobox.h"
+#include "ui_autocutdialog.h"
 
 class LatexRunner;
 
