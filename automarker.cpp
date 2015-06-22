@@ -11,13 +11,14 @@
 
 typedef image_array::index_range range;
 
+//Returns first and last tainted pixel in a line
 template<typename Iterator, typename _Predicate>
 std::pair<Iterator, Iterator> bothside_search(Iterator first, Iterator end, _Predicate pred)
 {
 	typedef std::reverse_iterator<decltype(end)> rev_iter;
 
 	auto res_start = std::find_if(first, end, pred);
-	auto res_end = end;
+	auto res_end = first;
 
 	//if a first pixel was found, find a last one (search backwards)
 	if(res_start != end)
@@ -38,6 +39,7 @@ std::vector<rect> automark_scan(const image_array& bimage, unsigned int threshol
 	const std::size_t pageHeight = bimage.shape()[0];
 
 	auto add_marker = [&](int top, int bottom, int left, int right) {
+		assert(bottom > top && right > left);
 		rect rt;
 		rt.top = top;
 		rt.bottom = bottom;
@@ -78,7 +80,7 @@ std::vector<rect> automark_scan(const image_array& bimage, unsigned int threshol
 
 			if(trange.first != end_it)
 				firstTaintedColumn = std::min((unsigned int)std::distance(current_row.begin(), trange.first), firstTaintedColumn);
-			if(trange.second != end_it)
+			if(trange.second != current_row.begin())
 				lastTaintedColumn  = std::max((unsigned int)std::distance(current_row.begin(), trange.second), lastTaintedColumn);
 
 			if(trange.first == end_it)
@@ -103,7 +105,7 @@ std::vector<rect> automark_scan(const image_array& bimage, unsigned int threshol
 			}
 		}
 
-		if(firstTaintedRow != -1)
+		if(firstTaintedRow != -1 && firstTaintedRow < pageHeight - lineThreshold)
 			add_marker(firstTaintedRow, pageHeight-1, firstTaintedColumn, lastTaintedColumn);
 	}
 	else

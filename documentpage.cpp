@@ -169,10 +169,10 @@ const std::deque<PdfMarker *>& DocumentPage::markers() const
 
 DocumentPage::~DocumentPage()
 {
-	if(m_scene)
-		delete m_scene;
-	
 	for(PdfMarker * marker : m_markers)
 		delete marker;
+
+	if(m_scene)
+		delete m_scene;
 }
 

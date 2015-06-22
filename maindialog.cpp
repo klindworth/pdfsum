@@ -53,7 +53,7 @@ MainDialog::MainDialog(QWidget* parent)
 	m_scaleFactors = std::vector<double>{0.5, 0.75, 1.0, 1.5, 2.0};
 	
 	m_cbPage = new QComboBox();
-	toolBar->addWidget(new QLabel("Seite"));
+	toolBar->addWidget(new QLabel(tr("Page")));
 	toolBar->addWidget(m_cbPage);
 	
 	m_cbZoom = new QComboBox();
