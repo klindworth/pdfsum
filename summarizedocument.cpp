@@ -66,7 +66,7 @@ DocumentPage* SummarizeDocument::page(int number)
 std::shared_ptr<QImage> SummarizeDocument::renderedPage(int number, double scale, const DocumentSettings* settings)
 {
 	//QMutexLocker locker(&m_rendermutex);
-	return std::make_shared<QImage>(pdfDocument()->page(number)->renderToImage(scale * settings->dpiX(), scale * settings->dpiY()));
+	return std::make_shared<QImage>(pdfDocument()->page(number)->renderToImage(scale * settings->dpiX().value, scale * settings->dpiY().value));
 }
 
 int SummarizeDocument::pageCount() const

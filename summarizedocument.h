@@ -49,12 +49,12 @@ class SummarizeDocument : public QObject
 		Poppler::Document* pdfDocument() const;
 		const QString& filepath() const;
 
-		inline std::vector<DocumentPage*>::iterator pagesBegin()
+		inline std::vector<DocumentPage*>::iterator begin()
 		{
 			return m_pages.begin();
 		}
 
-		inline std::vector<DocumentPage*>::iterator pagesEnd()
+		inline std::vector<DocumentPage*>::iterator end()
 		{
 			return m_pages.end();
 		}
@@ -68,5 +68,18 @@ class SummarizeDocument : public QObject
 		std::vector<DocumentPage*> m_pages;
 		QMutex m_rendermutex;
 };
+
+namespace std
+{
+	inline std::vector<DocumentPage*>::iterator begin(SummarizeDocument& doc)
+	{
+		return doc.begin();
+	}
+
+	inline std::vector<DocumentPage*>::iterator end(SummarizeDocument& doc)
+	{
+		return doc.begin();
+	}
+}
 
 #endif

@@ -45,6 +45,7 @@ set(HEADERS
 	autocut.h
 	pdfmarkeritem.h
 	automarker.h
+	document_units.h
 )
 
 set(FORMS
@@ -62,5 +63,5 @@ target_link_libraries(${PROJECT_NAME}
     Qt5::Widgets Qt5::Xml ${Boost_LIBRARIES} poppler-qt5
 )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++0x")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++14")
 

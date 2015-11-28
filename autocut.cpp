@@ -32,9 +32,9 @@ AutoCut::AutoCut(QWidget* parent)
 : QDialog( parent ), Ui::AutocutDialog()
 {
 	setupUi(this);
-	connect(btnTargetSelect, SIGNAL(clicked()), this, SLOT(selectTarget()));
-	connect(btnSourceSelect, SIGNAL(clicked()), this, SLOT(selectSource()));
-	connect(btnStart, SIGNAL(clicked()), this, SLOT(start()));
+	connect(btnTargetSelect, &QPushButton::clicked, this, &AutoCut::selectTarget);
+	connect(btnSourceSelect, &QPushButton::clicked, this, &AutoCut::selectSource);
+	connect(btnStart,        &QPushButton::clicked, this, &AutoCut::start);
 }
 
 void AutoCut::selectSource()
@@ -97,7 +97,7 @@ void AutoCut::cutFile(QDir dirSource, QDir dirTarget, QString fileName)
 	if(doc->pageCount() > 0)
 	{
 		DocumentPage *page = doc->page(0);
-		page->autoMarkCombined(settings, 250, 0.0, true, true);
+		page->autoMarkCombined(settings, 250, document_units::centimeter(0.0), true, true);
 		//page->autoBoundingBox(settings, 250);
 		const std::deque<PdfMarker*>& markers = page->markers();
 		if(markers.size() > 0)
@@ -108,10 +108,10 @@ void AutoCut::cutFile(QDir dirSource, QDir dirTarget, QString fileName)
 			input += marker->toLatexViewport();
 			input += ", clip=true, pages={1}, fitpaper]{" + fileName + "}\n\\end{document}\n";
 			
-			m_currentRunner = std::unique_ptr<LatexRunner>(new LatexRunner(input, dirSource.path(), dirTarget.filePath(fileName), this));
-			connect(m_currentRunner.get(), SIGNAL(statusMessage(QString)), this, SLOT(statusMessageReceived(QString)));
-			connect(m_currentRunner.get(), SIGNAL(errorMessage(QString)), this, SLOT(errorMessageReceived(QString)));
-			connect(m_currentRunner.get(), SIGNAL(finished(LatexRunner*)), this, SLOT(startJob()));
+			m_currentRunner = std::make_unique<LatexRunner>(input, dirSource.path(), dirTarget.filePath(fileName), this);
+			connect(m_currentRunner.get(), &LatexRunner::statusMessage, this, &AutoCut::statusMessageReceived);
+			connect(m_currentRunner.get(), &LatexRunner::errorMessage,  this, &AutoCut::errorMessageReceived);
+			connect(m_currentRunner.get(), &LatexRunner::finished,      this, &AutoCut::startJob);
 		}
 		else
 			lwStatus->addItem(fileName + tr(": no marker created"));

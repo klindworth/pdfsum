@@ -31,7 +31,7 @@ PdfView::PdfView(QWidget *parent)
  : QGraphicsView(parent)
 {
 	m_settings = nullptr;
-	m_rubberBand = std::unique_ptr<QRubberBand>(new QRubberBand(QRubberBand::Rectangle, this));
+	m_rubberBand = std::make_unique<QRubberBand>(QRubberBand::Rectangle, this);
 	
 	m_dScale = 1.0;
 	m_page = nullptr;
@@ -66,7 +66,7 @@ void PdfView::setDocumentSettings(DocumentSettings *settings)
 * @param leftMargin The left margin in cm
 * @param rightMargin The right margin in cm
 */
-void PdfView::changeAutoWidth(bool activate, double leftMargin, double rightMargin)
+void PdfView::changeAutoWidth(bool activate, document_units::centimeter leftMargin, document_units::centimeter rightMargin)
 {
 	m_settings->setAutoWidth(activate, leftMargin, rightMargin);
 }

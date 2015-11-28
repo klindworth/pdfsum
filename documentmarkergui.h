@@ -42,6 +42,7 @@ class DocumentMarkerGui : public QWidget, private Ui::Form
 	protected slots:
 		void removeMarker();
 		void saveToPdf();
+		void copyToAllOtherPages();
 		
 		
 	protected:

@@ -20,6 +20,7 @@
 #define DOCUMENTSETTINGS_H
 
 #include <QObject>
+#include "document_units.h"
 
 class PdfView;
 enum class Unit {cm, pixel};
@@ -32,13 +33,20 @@ class DocumentSettings : public QObject
 	public:		
 		DocumentSettings(int dpiX, int dpiY, QObject *parent = 0);
 		~DocumentSettings();
-		double pixelInCmX(int pixel) const;
-		int cmInPixelX(double cm) const;
-		double pixelInCmY(int pixel) const;
-		int cmInPixelY(double cm) const;
-		int dpiX() const;
-		int dpiY() const;
-		void setAutoWidth(bool autowidth, double leftMargin, double rightMargin);
+
+		inline const document_units::resolution_setting& resolution() const {
+			return _dpi;
+		}
+
+		inline document_units::dpi dpiX() const {
+			return _dpi.x;
+		}
+
+		inline document_units::dpi dpiY() const {
+			return _dpi.y;
+		}
+
+		void setAutoWidth(bool autowidth, document_units::centimeter leftMargin, document_units::centimeter rightMargin);
 		bool autoWidth() const;
 		double leftMargin(Unit unit) const;
 		double rightMargin(Unit unit) const;
@@ -49,12 +57,12 @@ class DocumentSettings : public QObject
 		PdfView* view() const;
 		
 	public slots:
-		void setTopMargin(double topMargin);
-		void setBottomMargin(double bottomMargin);
+		void setTopMargin(document_units::centimeter topMargin);
+		void setBottomMargin(document_units::centimeter bottomMargin);
 		
 	private:
-		double m_dLeftMargin, m_dRightMargin, m_dTopMargin, m_dBottomMargin;
-		int m_dpiX, m_dpiY;
+		document_units::centimeter _leftMargin, _rightMargin, _topMargin, _bottomMargin;
+		document_units::resolution_setting _dpi;
 		bool m_bAutoWidth;
 		PdfView *m_view;
 

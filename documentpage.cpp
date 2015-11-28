@@ -47,20 +47,20 @@ int DocumentPage::number() const
 	return m_iPageNumber;
 }
 
-QSizeF DocumentPage::pageSizeInCm(const DocumentSettings *settings) const
+document_units::size<document_units::centimeter> DocumentPage::pageSize(const document_units::resolution_setting& settings) const
 {
 	if(m_renderedPage)
 	{
-		double width = settings->pixelInCmX(m_renderedPage->width() / m_dRenderedScale);
-		double height = settings->pixelInCmY(m_renderedPage->height() / m_dRenderedScale);
-		qDebug(QString::number(width).toLatin1());
-		qDebug(QString::number(height).toLatin1());
-		return QSizeF(width, height);
+		using namespace document_units;
+
+		pixel width(m_renderedPage->width() / m_dRenderedScale);
+		pixel height(m_renderedPage->height() / m_dRenderedScale);
+		size<pixel> pixelsize(width, height);
+
+		return settings.to<centimeter>(pixelsize);
 	}
 	else
-		qWarning("no rendered page");
-	return QSizeF();
-	//m_sdoc->pdfDocument()->page(m_iPageNumber)->pageSizeF(); /unclear?
+		throw std::runtime_error("no rendered page");
 }
 
 void DocumentPage::addMarker(PdfMarker *marker)
@@ -136,14 +136,14 @@ void DocumentPage::removeAllMarkers(bool onlyAutomatic)
 	m_markers.erase(it, m_markers.end());
 }
 
-void DocumentPage::autoMarkCombined(const DocumentSettings *settings, uint threshold, double dHeightThreshold, bool determineVert, bool boundingBox)
+void DocumentPage::autoMarkCombined(const DocumentSettings *settings, uint threshold, document_units::centimeter heightThreshold, bool determineVert, bool boundingBox)
 {
 	if(!m_renderedPage)
 		renderPage(settings, 1.0);
 	
 	if(m_renderedPage)
 	{
-		std::vector<QRectF> res = autoMarkCombinedInternal(*m_renderedPage, *settings, threshold, dHeightThreshold, !determineVert, boundingBox, m_dRenderedScale);
+		std::vector<QRectF> res = autoMarkCombinedInternal(*m_renderedPage, *settings, threshold, heightThreshold, !determineVert, boundingBox, m_dRenderedScale);
 		for(QRectF rt : res)
 		{
 			PdfMarker *marker = new PdfMarker(this, settings, rt);
@@ -157,7 +157,7 @@ double DocumentPage::markedHeight() const
 {
 	double result = 0.0;
 	for(PdfMarker * marker : m_markers)
-		result += marker->height();
+		result += marker->height().value;
 	
 	return result;
 }

@@ -224,7 +224,7 @@ QRectF scale_rect(const DocumentSettings& settings, rect rt, QSize sz, double re
 	return QRectF(rt.left, rt.top/rendered_scale, width, height/rendered_scale);
 }
 
-std::vector<QRectF> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, double dHeightThreshold, bool ignore_width, bool boundingBox, double rendered_scale)
+std::vector<QRectF> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, document_units::centimeter heightThreshold, bool ignore_width, bool boundingBox, double rendered_scale)
 {
 	//prepare image
 	const unsigned int lastPixel = qimage.width()  - settings.rightMargin(Unit::pixel);
@@ -246,8 +246,7 @@ std::vector<QRectF> autoMarkCombinedInternal(const QImage& qimage, const Documen
 	assert(lineLength == bimage.shape()[1]);
 
 	//the scanning
-
-	const unsigned int lineThreshold = settings.cmInPixelY(dHeightThreshold/10.0)*rendered_scale;
+	const unsigned int lineThreshold = settings.resolution().y_to<document_units::pixel>(heightThreshold).value*rendered_scale;
 	const unsigned int margin = 2*rendered_scale;
 
 	std::vector<QRectF> result;

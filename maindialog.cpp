@@ -32,6 +32,7 @@
 #include "prerenderthread.h"
 #include "automarkthread.h"
 #include "autocut.h"
+#include "document_units.h"
 
 #include <memory>
 
@@ -45,7 +46,7 @@ MainDialog::MainDialog(QWidget* parent)
 	actionBack->setEnabled(false);
 	actionForward->setEnabled(false);
 	
-	m_settings = std::unique_ptr<DocumentSettings>(new DocumentSettings(physicalDpiX(), physicalDpiY()));
+	m_settings = std::unique_ptr<DocumentSettings>(physicalDpiX(), physicalDpiY());
 	//m_settings->setAutoWidth(true, 2.0, 2.0);
 	m_view->setDocumentSettings(documentSettings());
 	m_view->setDocumentMarkerGui(markerProperties);
@@ -131,7 +132,7 @@ void MainDialog::refreshNavigationButtons()
 
 void MainDialog::changeAutoWidth()
 {
-	m_view->changeAutoWidth(cbActivateAutoWidth->checkState() == Qt::Checked, dsLeftMargin->value(), dsRightMargin->value());
+	m_view->changeAutoWidth(cbActivateAutoWidth->checkState() == Qt::Checked, document_units::centimeter(dsLeftMargin->value()), document_units::centimeter(dsRightMargin->value()));
 }
 
 void MainDialog::changeZoom(int iIndex)
@@ -167,7 +168,7 @@ void MainDialog::runAutoMark()
 		m_renderthread->pause();
 	if(rbCompleteDocument->isChecked())
 	{
-		std::for_each(m_sdoc->pagesBegin(), m_sdoc->pagesEnd(), [=](DocumentPage* page){
+		std::for_each(m_sdoc->begin(), m_sdoc->end(), [=](DocumentPage* page){
 			if(removeAutomaticMarker)
 				page->removeAllMarkers(true);
 		});
@@ -186,14 +187,14 @@ void MainDialog::runAutoMark()
 	{
 		if(removeAutomaticMarker)
 			m_view->page()->removeAllMarkers(true);
-		m_view->page()->autoMarkCombined(documentSettings(), spGreyThreshold->value(), dspHeightThreshold->value(), !cbCompletePageWidth->isChecked(), cbBoundingBox->isChecked());
+		m_view->page()->autoMarkCombined(documentSettings(), spGreyThreshold->value(), document_units::centimeter(dspHeightThreshold->value()/10.0), !cbCompletePageWidth->isChecked(), cbBoundingBox->isChecked());
 		autoMarkFinished();
 	}
 }
 
 void MainDialog::autoMarkPage(DocumentPage *page, bool boundingBox)
 {
-	page->autoMarkCombined(documentSettings(), spGreyThreshold->value(), dspHeightThreshold->value(), !cbCompletePageWidth->isChecked(), boundingBox);
+	page->autoMarkCombined(documentSettings(), spGreyThreshold->value(), document_units::centimeter(dspHeightThreshold->value()/10.0), !cbCompletePageWidth->isChecked(), boundingBox);
 	
 	if(page == m_view->page())
 		m_view->scene()->update();
@@ -225,7 +226,7 @@ void MainDialog::loadDocument(QString fileName)
 	m_view->setPage(m_sdoc->page(0));
 	refreshNavigationButtons();
 	
-	m_renderthread = std::unique_ptr<PrerenderThread>( new PrerenderThread(documentSettings(), m_sdoc) );
+	m_renderthread = std::make_unique<PrerenderThread>(documentSettings(), m_sdoc);
 	m_renderthread->start();
 }
 

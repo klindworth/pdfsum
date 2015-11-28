@@ -51,6 +51,15 @@ QRectF PdfMarker::rect() const
 	return m_rect;
 }
 
+document_units::rect<document_units::pixel> PdfMarker::pixelRect() const
+{
+	using namespace document_units;
+	coordinate<pixel> pcoord(pixel(m_rect.x()), pixel(m_rect.y()));
+	size<pixel> psize(pixel(m_rect.width()), pixel(m_rect.height()));
+
+	return document_units::rect<document_units::pixel>(pcoord, psize);
+}
+
 PdfMarkerItem* PdfMarker::item() const
 {
 	return m_item;
@@ -71,14 +80,25 @@ DocumentPage* PdfMarker::page() const
 	return m_page;
 }
 
-double PdfMarker::height() const
+document_units::centimeter PdfMarker::height() const
 {
-	return documentSettings()->pixelInCmY(rect().height());
+	return documentSettings()->resolution().to<document_units::centimeter>(pixelRect())._size.height;
 }
 
 QString PdfMarker::toLatexViewport() const
 {
-	//ATTENTION: rect.pos != item.pos !!!!
+	document_units::resolution_setting resolution = documentSettings()->resolution();
+	document_units::rect<document_units::centimeter> cmrect = resolution.to<document_units::centimeter>(pixelRect());
+	document_units::centimeter pgheight = page()->pageSize(resolution).height;
+
+	document_units::coordinate<document_units::centimeter> bottom_left(cmrect.start_point().x, pgheight - cmrect.end_point().y);
+	document_units::coordinate<document_units::centimeter> top_right  (cmrect.end_point().x,   pgheight - cmrect.start_point().y);
+
+	QString text = QString("viewport= %1cm %2cm %3cm %4cm").arg(bottom_left.x.value).arg(bottom_left.y.value).arg(top_right.x.value).arg(top_right.y.value);
+
+	return text;
+
+	/*//ATTENTION: rect.pos != item.pos !!!!
 	//1 = point bottom left, 2 = top right
 	float x1 = documentSettings()->pixelInCmX(rect().x());
 	float y1 = page()->pageSizeInCm(documentSettings()).height() - documentSettings()->pixelInCmY(rect().y() + rect().height());
@@ -88,7 +108,7 @@ QString PdfMarker::toLatexViewport() const
 	QString text = "viewport= " % QString::number(x1) + "cm " % QString::number(y1) % "cm " %
 	QString::number(x2) % "cm " % QString::number(y2) % "cm";
 		
-	return text;
+	return text;*/
 }
 
 PdfMarker::~PdfMarker()

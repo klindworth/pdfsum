@@ -32,8 +32,18 @@ DocumentMarkerGui::DocumentMarkerGui(QWidget* parent)
 {
 	setupUi(this);
 	
-	connect(btnDeleteMarker, SIGNAL(clicked()), this, SLOT(removeMarker()));
-	connect(btnSavePdf, SIGNAL(clicked()), this, SLOT(saveToPdf()));
+	connect(btnDeleteMarker,     &QPushButton::clicked, this, &DocumentMarkerGui::removeMarker);
+	connect(btnSavePdf,          &QPushButton::clicked, this, &DocumentMarkerGui::saveToPdf);
+	connect(btnCopyToOtherPages, &QPushButton::clicked, this, &DocumentMarkerGui::copyToAllOtherPages);
+}
+
+void DocumentMarkerGui::copyToAllOtherPages()
+{
+	for(DocumentPage* cpage : *(m_marker->page()->document()))
+	{
+		if(cpage != m_marker->page())
+			cpage->addMarker(new PdfMarker(cpage, m_marker->documentSettings(), m_marker->rect()));
+	}
 }
 
 void DocumentMarkerGui::setDocumentMarker(PdfMarker *marker)
@@ -56,7 +66,7 @@ void DocumentMarkerGui::saveToPdf()
 		
 		QString wd = fileinfo.absoluteDir().absolutePath();
 
-		m_runner = std::unique_ptr<LatexRunner>(new LatexRunner(input, wd, saveas, this));
+		m_runner = std::make_unique<LatexRunner>(input, wd, saveas, this);
 	}
 
 }

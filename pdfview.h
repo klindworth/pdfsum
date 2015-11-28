@@ -35,6 +35,8 @@ class DocumentPage;
 class SummarizeDocument;
 class DocumentMarkerGui;
 
+namespace document_units { struct centimeter; }
+
 /**
 	@author Kai Klindworth <KaiKlindworth@web.de>
 */
@@ -52,7 +54,7 @@ class PdfView : public QGraphicsView
 	public slots:
 		void setPage(DocumentPage *page);
 		void setZoom(double dZoom);
-		void changeAutoWidth(bool activate, double leftMargin, double rightMargin);
+		void changeAutoWidth(bool activate, document_units::centimeter leftMargin, document_units::centimeter rightMargin);
 		void setAddMarkerEnabled(bool enable);
 		void refreshView();
 		void clear();

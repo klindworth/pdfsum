@@ -22,6 +22,8 @@
 #include <QGraphicsRectItem>
 #include <QRectF>
 
+#include "document_units.h"
+
 /**
 	@author Kai Klindworth <KaiKlindworth@web.de>
 */
@@ -41,9 +43,10 @@ class PdfMarker //: public QGraphicsRectItem
 		DocumentPage* page() const;
 		bool automaticMarker() const;
 		void setAutomaticMarker(bool automarker);
-		double height() const;
+		document_units::centimeter height() const;
 		PdfMarkerItem* item() const;
 		QRectF rect() const;
+		document_units::rect<document_units::pixel> pixelRect() const;
 		void setRect(const QRectF& rect);
 		inline const DocumentSettings* documentSettings() const {
 			return m_settings;

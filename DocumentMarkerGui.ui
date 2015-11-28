@@ -20,7 +20,8 @@
       <string>Delete</string>
      </property>
      <property name="icon">
-      <iconset theme="edit-delete"/>
+      <iconset theme="edit-delete">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
@@ -30,7 +31,18 @@
       <string>Save as PDF file</string>
      </property>
      <property name="icon">
-      <iconset theme="document-save-as"/>
+      <iconset theme="document-save-as">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="btnCopyToOtherPages">
+     <property name="text">
+      <string>Copy to all other pages</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-copy"/>
      </property>
     </widget>
    </item>

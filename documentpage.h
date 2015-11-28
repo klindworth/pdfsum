@@ -26,6 +26,8 @@
 #include <deque>
 #include <cassert>
 
+#include "document_units.h"
+
 class PdfMarker;
 class DocumentSettings;
 class SummarizeDocument;
@@ -49,11 +51,11 @@ class DocumentPage
 		void removeAllMarkers(bool onlyAutomatic);
 		double markedHeight() const;
 		SummarizeDocument* document();
-		QSizeF pageSizeInCm(const DocumentSettings *settings) const;
+		document_units::size<document_units::centimeter> pageSize(const document_units::resolution_setting& settings) const;
 		const std::deque<PdfMarker*>& markers() const;
 
 	public slots:
-		void autoMarkCombined(const DocumentSettings *settings, uint threshold, double dHeightThreshold, bool determineVert, bool boundingBox);
+		void autoMarkCombined(const DocumentSettings *settings, uint threshold, document_units::centimeter HeightThreshold, bool determineVert, bool boundingBox);
 		
 	protected:
 		std::shared_ptr<QImage> rerenderPage(const DocumentSettings *settings, double scale);
