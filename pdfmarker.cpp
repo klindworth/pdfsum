@@ -28,7 +28,7 @@
 #include "pdfmarkeritem.h"
 #include "pdfview.h"
 
-PdfMarker::PdfMarker(DocumentPage *page, const DocumentSettings* settings, const QRectF& rect) : m_rect(rect), m_settings(settings)
+/*PdfMarker::PdfMarker(DocumentPage *page, const DocumentSettings* settings, const QRectF& prect) : m_rect(prect), m_settings(settings)
 {
 	m_item = nullptr;
 	m_page = page;
@@ -36,28 +36,52 @@ PdfMarker::PdfMarker(DocumentPage *page, const DocumentSettings* settings, const
 	m_bAutomaticMarker = false;
 	
 	if(documentSettings()->view())
-		m_item = new PdfMarkerItem(this, rect);
+		m_item = new PdfMarkerItem(this, rect());
+}*/
+
+PdfMarker::PdfMarker(DocumentPage *page, const DocumentSettings* settings, document_units::rect<document_units::centimeter> prect) : _rect(prect), m_settings(settings)
+{
+	m_item = nullptr;
+	m_page = page;
+
+	m_bAutomaticMarker = false;
+
+	if(documentSettings()->view())
+		m_item = new PdfMarkerItem(this, rect());
 }
 
-void PdfMarker::setRect(const QRectF& rect)
+/*void PdfMarker::setRect(const QRectF& rect)
 {
 	m_rect = rect;
 	if(m_item)
 		m_item->setRect(rect);
+}*/
+
+QRectF toRectF(const document_units::rect<document_units::pixel>& rt)
+{
+	return QRectF(rt._coordinate.x.raw_value(), rt._coordinate.y.raw_value(), rt._size.width.raw_value(), rt._size.height.raw_value());
 }
 
 QRectF PdfMarker::rect() const
 {
-	return m_rect;
+	//return m_rect;
+	return toRectF(pixelRect());
+}
+
+document_units::rect<document_units::centimeter> PdfMarker::centimeterRect() const
+{
+	return _rect;
 }
 
 document_units::rect<document_units::pixel> PdfMarker::pixelRect() const
 {
-	using namespace document_units;
+	/*using namespace document_units;
 	coordinate<pixel> pcoord(pixel(m_rect.x()), pixel(m_rect.y()));
 	size<pixel> psize(pixel(m_rect.width()), pixel(m_rect.height()));
 
-	return document_units::rect<document_units::pixel>(pcoord, psize);
+	return document_units::rect<document_units::pixel>(pcoord, psize);*/
+
+	return documentSettings()->resolution().to<document_units::pixel>(_rect);
 }
 
 PdfMarkerItem* PdfMarker::item() const

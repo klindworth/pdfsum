@@ -26,6 +26,7 @@
 #include "documentpage.h"
 #include "summarizedocument.h"
 #include "documentmarkergui.h"
+#include "document_units.h"
 
 PdfView::PdfView(QWidget *parent)
  : QGraphicsView(parent)
@@ -210,16 +211,22 @@ void PdfView::mouseReleaseEvent(QMouseEvent *event)
 	if (!m_rubberBand->size().isEmpty() && scene() && m_settings && m_bAddMarkerEnabled)
 	{
 		QPointF pos = mapToScene(m_rubberBand->pos()); //m_rubberBand->rect's pos is 0,0, so ask for pos seperatly
-		QRectF rect = QRectF(pos, mapToScene(m_rubberBand->rect()).boundingRect().size());
+		QRectF rectf = QRectF(pos, mapToScene(m_rubberBand->rect()).boundingRect().size());
+		
+		using namespace document_units;
+
+		//document_units::rect<document_units::pixel>
+		document_units::rect<pixel> prect(document_units::coordinate<pixel>(pixel(rectf.x()), pixel(rectf.y())), document_units::size<pixel>(pixel(rectf.width()), pixel(rectf.height())));
+		document_units::rect<centimeter> crect = m_settings->resolution().to<centimeter>(prect);
 		
 		//if the 'auto width' setting is active, overwrite the position and width of the marked area
 		if(m_settings->autoWidth())
 		{
-			rect.moveTo(m_settings->leftMargin(Unit::pixel), rect.y());
-			rect.setWidth(sceneRect().width() - m_settings->leftMargin(Unit::pixel) - m_settings->rightMargin(Unit::pixel));
+			rectf.moveTo(m_settings->leftMargin(Unit::pixel), rectf.y());
+			rectf.setWidth(sceneRect().width() - m_settings->leftMargin(Unit::pixel) - m_settings->rightMargin(Unit::pixel));
 		}
 		//create a marker
-		PdfMarker *marker = new PdfMarker(m_page, m_settings, rect);
+		PdfMarker *marker = new PdfMarker(m_page, m_settings, crect);
 		m_page->addMarker(marker);
 		//hides the temporarily rubberband
 		m_rubberBand->hide();

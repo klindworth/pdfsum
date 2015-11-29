@@ -144,9 +144,15 @@ void DocumentPage::autoMarkCombined(const DocumentSettings *settings, uint thres
 	
 	if(m_renderedPage)
 	{
-		std::vector<QRectF> res = autoMarkCombinedInternal(*m_renderedPage, *settings, threshold, heightThreshold, !determineVert, boundingBox, m_dRenderedScale, this);
-		for(QRectF rt : res)
+		std::vector<document_units::rect<document_units::centimeter>> res = autoMarkCombinedInternal(*m_renderedPage, *settings, threshold, heightThreshold, !determineVert, boundingBox, m_dRenderedScale, this);
+		for(auto rt : res)
 		{
+			/*using namespace document_units;
+
+			//document_units::rect<document_units::pixel>
+			document_units::rect<pixel> prect(document_units::coordinate<pixel>(pixel(rt.x()), pixel(rt.y())), document_units::size<pixel>(pixel(rt.width()), pixel(rt.height())));
+			document_units::rect<centimeter> crect = settings->resolution().to<centimeter>(prect);*/
+
 			PdfMarker *marker = new PdfMarker(this, settings, rt);
 			marker->setAutomaticMarker(true);
 			addMarker(marker);

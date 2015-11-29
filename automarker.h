@@ -31,6 +31,6 @@ std::vector<rect> automark_scan(const image_array& bimage, unsigned int threshol
 rect add_margin(const DocumentSettings& settings, int margin, rect rt, QSize sz);
 rect transform_rect(const DocumentSettings& settings, rect rt);
 QRectF scale_rect(const DocumentSettings& settings, rect rt, QSize sz, double rendered_scale, bool ignore_width);
-std::vector<QRectF> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, document_units::centimeter dHeightThreshold, bool ignore_width, bool boundingBox, double rendered_scale, DocumentPage* page);
+std::vector<document_units::rect<document_units::centimeter>> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, document_units::centimeter dHeightThreshold, bool ignore_width, bool boundingBox, double rendered_scale, DocumentPage* page);
 
 #endif // AUTOMARKER_H

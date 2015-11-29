@@ -37,7 +37,8 @@ class PdfView;
 class PdfMarker //: public QGraphicsRectItem
 {
 	public:
-		PdfMarker(DocumentPage *page, const DocumentSettings* settings, const QRectF& rect);
+		//PdfMarker(DocumentPage *page, const DocumentSettings* settings, const QRectF& rect);
+		PdfMarker(DocumentPage *page, const DocumentSettings* settings, document_units::rect<document_units::centimeter> prect);
 		~PdfMarker();
 		QString toLatexViewport() const;
 		DocumentPage* page() const;
@@ -47,7 +48,8 @@ class PdfMarker //: public QGraphicsRectItem
 		PdfMarkerItem* item() const;
 		QRectF rect() const;
 		document_units::rect<document_units::pixel> pixelRect() const;
-		void setRect(const QRectF& rect);
+		document_units::rect<document_units::centimeter> centimeterRect() const;
+		//void setRect(const QRectF& rect);
 		inline const DocumentSettings* documentSettings() const {
 			return m_settings;
 		}
@@ -56,7 +58,8 @@ class PdfMarker //: public QGraphicsRectItem
 
 		
 	private:
-		QRectF m_rect;
+		document_units::rect<document_units::centimeter> _rect;
+		//QRectF m_rect;
 		PdfMarkerItem *m_item;
 		const DocumentSettings* m_settings;
 		DocumentPage *m_page;

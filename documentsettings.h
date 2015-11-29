@@ -59,6 +59,10 @@ class DocumentSettings : public QObject
 		double topMargin(Unit unit) const;
 		double bottomMargin(Unit unit) const;
 
+		document_units::margins margins() const {
+			return _margins;
+		}
+
 		void registerView(PdfView *view);
 		PdfView* view() const;
 		

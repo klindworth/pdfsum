@@ -42,7 +42,7 @@ void DocumentMarkerGui::copyToAllOtherPages()
 	for(DocumentPage* cpage : *(m_marker->page()->document()))
 	{
 		if(cpage != m_marker->page())
-			cpage->addMarker(new PdfMarker(cpage, m_marker->documentSettings(), m_marker->rect()));
+			cpage->addMarker(new PdfMarker(cpage, m_marker->documentSettings(), m_marker->centimeterRect()));
 	}
 }
 
