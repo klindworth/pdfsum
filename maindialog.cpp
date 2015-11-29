@@ -46,7 +46,7 @@ MainDialog::MainDialog(QWidget* parent)
 	actionBack->setEnabled(false);
 	actionForward->setEnabled(false);
 	
-	m_settings = std::unique_ptr<DocumentSettings>(physicalDpiX(), physicalDpiY());
+	m_settings = std::make_unique<DocumentSettings>(document_units::dpi(physicalDpiX()), document_units::dpi(physicalDpiY()));
 	//m_settings->setAutoWidth(true, 2.0, 2.0);
 	m_view->setDocumentSettings(documentSettings());
 	m_view->setDocumentMarkerGui(markerProperties);
@@ -67,14 +67,22 @@ MainDialog::MainDialog(QWidget* parent)
 	connect(m_cbZoom, SIGNAL(currentIndexChanged(int)), this, SLOT(changeZoom(int)));
 	connect(dsLeftMargin, SIGNAL(valueChanged(double)), this, SLOT(changeAutoWidth()));
 	connect(dsRightMargin, SIGNAL(valueChanged(double)), this, SLOT(changeAutoWidth()));
+	//connect(dsLeftMargin,  &QDoubleSpinBox::valueChanged, this, &MainDialog::changeAutoWidth);
+	//connect(dsRightMargin, &QDoubleSpinBox::valueChanged, this, &MainDialog::changeAutoWidth);
 	connect(cbActivateAutoWidth, SIGNAL(stateChanged(int)), this, SLOT(changeAutoWidth()));
 	connect(m_cbPage, SIGNAL(currentIndexChanged(int)), this, SLOT(changePage(int)));
 	connect(pbAutoMark, SIGNAL(clicked()), this, SLOT(runAutoMark()));
 	connect(actionEnableMarker, SIGNAL(toggled(bool)), m_view, SLOT(setAddMarkerEnabled(bool)));
 	connect(action_open, SIGNAL(triggered( bool )), this, SLOT(openDocument()));
 	connect(actionAutocut, SIGNAL(triggered(bool)), this, SLOT(openAutocut()));
-	connect(dsTopMargin, SIGNAL(valueChanged(double)), documentSettings(), SLOT(setTopMargin(double)));
-	connect(dsBottomMargin, SIGNAL(valueChanged(double)), documentSettings(), SLOT(setBottomMargin(double)));
+	//connect(dsTopMargin, &QDoubleSpinBox::valueChanged, documentSettings(), SLOT(setTopMargin(double)));
+	connect(dsTopMargin, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), [&](double margin) {
+		documentSettings()->setTopMargin(document_units::centimeter(margin));
+	});
+	//connect(dsBottomMargin, &QDoubleSpinBox::valueChanged, documentSettings(), SLOT(setBottomMargin(double)));
+	connect(dsTopMargin, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), [&](double margin) {
+		documentSettings()->setBottomMargin(document_units::centimeter(margin));
+	});
 	connect(actionLatex, SIGNAL(triggered( bool )), this, SLOT(exportLatex()));
 	connect(actionBack, SIGNAL(triggered(bool)), this, SLOT(backward()));
 	connect(actionForward, SIGNAL(triggered(bool)), this, SLOT(forward()));

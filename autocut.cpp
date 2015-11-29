@@ -91,7 +91,7 @@ void AutoCut::errorMessageReceived(QString msg)
 
 void AutoCut::cutFile(QDir dirSource, QDir dirTarget, QString fileName)
 {
-	DocumentSettings *settings = new DocumentSettings(physicalDpiX(), physicalDpiY(), this);
+	DocumentSettings *settings = new DocumentSettings(document_units::dpi(physicalDpiX()), document_units::dpi(physicalDpiY()), this);
 	//qDebug(path);
 	std::shared_ptr<SummarizeDocument> doc = SummarizeDocument::loadGui(dirSource.filePath(fileName), this);
 	if(doc->pageCount() > 0)

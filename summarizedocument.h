@@ -33,6 +33,10 @@ namespace Poppler {
 class DocumentPage;
 class DocumentSettings;
 
+namespace document_units {
+struct resolution_setting;
+}
+
 /**
 	@author Kai Klindworth <KaiKlindworth@web.de>
 */
@@ -44,7 +48,7 @@ class SummarizeDocument : public QObject
 		~SummarizeDocument();
 		
 		DocumentPage* page(int number);
-		std::shared_ptr<QImage> renderedPage(int number, double scale, const DocumentSettings* settings);
+		std::shared_ptr<QImage> renderedPage(int number, double scale, document_units::resolution_setting settings);
 		int pageCount() const;
 		Poppler::Document* pdfDocument() const;
 		const QString& filepath() const;

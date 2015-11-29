@@ -9,6 +9,8 @@
 #include <QRectF>
 #include <QImage>
 
+#include "documentpage.h"
+
 typedef image_array::index_range range;
 
 //Returns first and last tainted pixel in a line
@@ -206,6 +208,16 @@ rect transform_rect(const DocumentSettings& settings, rect rt)
 	return rt;
 }
 
+document_units::rect<document_units::centimeter> add_page_margins(const DocumentSettings &settings, document_units::rect<document_units::centimeter> rt)
+{
+	return rt.move(document_units::centimeter(settings.leftMargin(Unit::cm)), document_units::centimeter(settings.topMargin(Unit::cm)));
+}
+
+document_units::rect<document_units::pixel> add_page_margins_pixel(const DocumentSettings &settings, document_units::rect<document_units::pixel> rt, double scale)
+{
+	return rt.move(document_units::pixel(settings.leftMargin(Unit::pixel)*scale), document_units::pixel(settings.topMargin(Unit::pixel)*scale));
+}
+
 QRectF scale_rect(const DocumentSettings& settings, rect rt, QSize sz, double rendered_scale, bool ignore_width)
 {
 	if(ignore_width)
@@ -224,7 +236,69 @@ QRectF scale_rect(const DocumentSettings& settings, rect rt, QSize sz, double re
 	return QRectF(rt.left, rt.top/rendered_scale, width, height/rendered_scale);
 }
 
-std::vector<QRectF> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, document_units::centimeter heightThreshold, bool ignore_width, bool boundingBox, double rendered_scale)
+document_units::rect<document_units::pixel> descale_and_transform(rect rt, double scale)
+{
+	int width  = rt.right - rt.left + 1;
+	int height = rt.bottom - rt.top + 1;
+
+	using namespace document_units;
+	const document_units::coordinate<document_units::pixel> coord(pixel(rt.left/scale), pixel(rt.top/scale));
+	const document_units::size<pixel> sz(pixel(width/scale), pixel(height/scale));
+
+	return document_units::rect<pixel>(coord, sz);
+}
+
+std::vector<QRectF> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, document_units::centimeter heightThreshold, bool ignore_width, bool boundingBox, double rendered_scale, DocumentPage* page)
+{
+	//prepare image
+	const unsigned int lastPixel = qimage.width()  - settings.rightMargin(Unit::pixel) * rendered_scale;
+	const unsigned int lastLine  = qimage.height() - settings.bottomMargin(Unit::pixel) * rendered_scale;
+	const unsigned int startPixel = settings.leftMargin(Unit::pixel)*rendered_scale;
+	const unsigned int startLine  = settings.topMargin(Unit::pixel) * rendered_scale;
+
+	const std::size_t lineLength = lastPixel - startPixel;
+	const std::size_t pageHeight = lastLine  - startLine;
+
+	image_array bimage(boost::extents[pageHeight][lineLength]);
+	for(std::size_t line = 0; line < pageHeight; ++line)
+	{
+		for(std::size_t i = 0; i < lineLength; ++i)
+			bimage[line][i] = qGray(qimage.pixel(i+startPixel, line+startLine));
+	}
+
+	assert(pageHeight == bimage.shape()[0]);
+	assert(lineLength == bimage.shape()[1]);
+
+	//the scanning
+	const unsigned int lineThreshold = settings.resolution().y_to<document_units::pixel>(heightThreshold).value*rendered_scale;
+	const unsigned int margin = 2*rendered_scale;
+
+	std::vector<QRectF> result;
+	std::vector<rect> old_res = automark_scan(bimage, threshold, lineThreshold, boundingBox);
+	for(rect rt : old_res)
+	{
+		QSize sz = qimage.size();
+		auto rtst = descale_and_transform(rt, rendered_scale);
+
+		//auto rect_with_borders = add_page_margins(settings, settings.resolution().to<document_units::centimeter>(rtst));
+		//auto result_rect = rect_with_borders.bounded_grow(settings.resolution().y_to<document_units::centimeter>(document_units::pixel(margin)), settings.active_area(page->pageSize(settings.resolution()))); //TODO: margin wrong...
+
+		auto rect_with_borders = add_page_margins_pixel(settings, rtst, rendered_scale);
+		auto result_rect = rect_with_borders.bounded_grow(document_units::pixel(margin), settings.resolution().to<document_units::pixel>(settings.active_area(page->pageSize(settings.resolution())))); //TODO: margin wrong...
+
+
+		QRectF compat_rect(QPointF(result_rect.start_point().x.value, result_rect.start_point().y.value), QSizeF(result_rect._size.width.value, result_rect._size.height.value));
+
+		/*QRectF rtf = scale_rect(settings, rt, sz, rendered_scale, ignore_width);
+
+		result.push_back(rtf);*/
+		result.push_back(compat_rect);
+	}
+
+	return result;
+}
+
+/*std::vector<QRectF> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, document_units::centimeter heightThreshold, bool ignore_width, bool boundingBox, double rendered_scale)
 {
 	//prepare image
 	const unsigned int lastPixel = qimage.width()  - settings.rightMargin(Unit::pixel);
@@ -263,5 +337,5 @@ std::vector<QRectF> autoMarkCombinedInternal(const QImage& qimage, const Documen
 	}
 
 	return result;
-}
+}*/
 

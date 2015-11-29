@@ -42,7 +42,7 @@ class DocumentPage
 		DocumentPage(SummarizeDocument *sdoc, int pagenumber);
 		~DocumentPage();
 		void addMarker(PdfMarker *marker);
-		std::shared_ptr<QImage> renderPage(const DocumentSettings *settings, double scale);
+		std::shared_ptr<QImage> renderPage(document_units::resolution_setting settings, double scale);
 		
 		void setGraphicsScene(QGraphicsScene *scene);
 		QGraphicsScene* graphicsScene();
@@ -51,14 +51,14 @@ class DocumentPage
 		void removeAllMarkers(bool onlyAutomatic);
 		double markedHeight() const;
 		SummarizeDocument* document();
-		document_units::size<document_units::centimeter> pageSize(const document_units::resolution_setting& settings) const;
+		document_units::size<document_units::centimeter> pageSize(document_units::resolution_setting settings) const;
 		const std::deque<PdfMarker*>& markers() const;
 
 	public slots:
 		void autoMarkCombined(const DocumentSettings *settings, uint threshold, document_units::centimeter HeightThreshold, bool determineVert, bool boundingBox);
 		
 	protected:
-		std::shared_ptr<QImage> rerenderPage(const DocumentSettings *settings, double scale);
+		std::shared_ptr<QImage> rerenderPage(document_units::resolution_setting settings, double scale);
 
 	private:
 		std::shared_ptr<QImage> m_renderedPage;

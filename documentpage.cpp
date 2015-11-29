@@ -47,7 +47,7 @@ int DocumentPage::number() const
 	return m_iPageNumber;
 }
 
-document_units::size<document_units::centimeter> DocumentPage::pageSize(const document_units::resolution_setting& settings) const
+document_units::size<document_units::centimeter> DocumentPage::pageSize(document_units::resolution_setting settings) const
 {
 	if(m_renderedPage)
 	{
@@ -94,7 +94,7 @@ QGraphicsScene* DocumentPage::graphicsScene()
 	return m_scene;
 }
 
-std::shared_ptr<QImage> DocumentPage::renderPage(const DocumentSettings *settings, double scale)
+std::shared_ptr<QImage> DocumentPage::renderPage(document_units::resolution_setting settings, double scale)
 {
 	//QMutexLocker locker(&m_mutex);
 	if(m_renderedPage && m_dRenderedScale == scale)
@@ -103,7 +103,7 @@ std::shared_ptr<QImage> DocumentPage::renderPage(const DocumentSettings *setting
 		return rerenderPage(settings, scale);
 }
 
-std::shared_ptr<QImage> DocumentPage::rerenderPage(const DocumentSettings *settings, double scale)
+std::shared_ptr<QImage> DocumentPage::rerenderPage(document_units::resolution_setting settings, double scale)
 {
 	m_renderedPage = document()->renderedPage(m_iPageNumber, scale, settings);
 	m_dRenderedScale = scale;
@@ -123,12 +123,13 @@ void DocumentPage::removeAllMarkers(bool onlyAutomatic)
 {
 	QMutexLocker locker(&m_markermutex);
 	auto eval = [=](PdfMarker* marker) {
-		return marker->automaticMarker() || !onlyAutomatic;
+		return !marker || marker->automaticMarker() || !onlyAutomatic;
 	};
 
-	std::for_each(m_markers.begin(), m_markers.end(), [=](PdfMarker *marker){
+	std::for_each(m_markers.begin(), m_markers.end(), [=](PdfMarker *& marker){
 		if(eval(marker))
 			delete marker;
+		marker = nullptr;
 	});
 
 	auto it = std::remove_if(m_markers.begin(), m_markers.end(), eval);
@@ -139,11 +140,11 @@ void DocumentPage::removeAllMarkers(bool onlyAutomatic)
 void DocumentPage::autoMarkCombined(const DocumentSettings *settings, uint threshold, document_units::centimeter heightThreshold, bool determineVert, bool boundingBox)
 {
 	if(!m_renderedPage)
-		renderPage(settings, 1.0);
+		renderPage(settings->resolution(), 1.0);
 	
 	if(m_renderedPage)
 	{
-		std::vector<QRectF> res = autoMarkCombinedInternal(*m_renderedPage, *settings, threshold, heightThreshold, !determineVert, boundingBox, m_dRenderedScale);
+		std::vector<QRectF> res = autoMarkCombinedInternal(*m_renderedPage, *settings, threshold, heightThreshold, !determineVert, boundingBox, m_dRenderedScale, this);
 		for(QRectF rt : res)
 		{
 			PdfMarker *marker = new PdfMarker(this, settings, rt);

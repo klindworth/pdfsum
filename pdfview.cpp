@@ -101,7 +101,7 @@ void PdfView::setZoom(double dZoom)
 		double scaleChange = dZoom/m_dScale;
 		m_dScale = dZoom;
 		//rerenderPage();
-		m_renderedPage = m_page->renderPage(m_settings, m_dScale);
+		m_renderedPage = m_page->renderPage(m_settings->resolution(), m_dScale);
 		m_renderedPixmap = std::make_shared<QPixmap>(QPixmap::fromImage(*m_renderedPage));
 		scale(scaleChange, scaleChange);
 	}
@@ -121,7 +121,7 @@ void PdfView::setPage(DocumentPage* page)
 		setScene(m_page->graphicsScene());
 
 		//rerenderPage();
-		m_renderedPage = m_page->renderPage(m_settings, m_dScale);
+		m_renderedPage = m_page->renderPage(m_settings->resolution(), m_dScale);
 		if(scene()->sceneRect().size().isEmpty())
 			scene()->setSceneRect(0, 0, m_renderedPage->rect().width()/m_dScale, m_renderedPage->rect().height()/m_dScale);
 

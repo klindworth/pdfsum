@@ -22,13 +22,10 @@
 
 const double inch_factor = 2.54;
 
-DocumentSettings::DocumentSettings(int dpiX, int dpiY, QObject *parent)
+DocumentSettings::DocumentSettings(document_units::dpi dpiX, document_units::dpi dpiY, QObject *parent)
  : QObject(parent),
-   _leftMargin(0.0),
-   _rightMargin(0.0),
-   _topMargin(0.0),
-   _bottomMargin(0.0),
-   _dpi(document_units::dpi(dpiX), document_units::dpi(dpiY))
+   _margins(document_units::centimeter(0.0), document_units::centimeter(0.0), document_units::centimeter(0.0), document_units::centimeter(0.0)),
+   _dpi(dpiX, dpiY)
 {
 	m_bAutoWidth = false;
 	m_view = nullptr;
@@ -46,21 +43,21 @@ void DocumentSettings::registerView(PdfView *view)
 
 void DocumentSettings::setAutoWidth(bool autowidth, document_units::centimeter leftMargin, document_units::centimeter rightMargin)
 {
-	_leftMargin = leftMargin;
-	_rightMargin = rightMargin;
+	_margins.left = leftMargin;
+	_margins.right = rightMargin;
 	m_bAutoWidth = autowidth;
 	emit marginsChanged();
 }
 
 void DocumentSettings::setTopMargin(document_units::centimeter topMargin)
 {
-	_topMargin = topMargin;
+	_margins.top = topMargin;
 	emit marginsChanged();
 }
 
 void DocumentSettings::setBottomMargin(document_units::centimeter bottomMargin)
 {
-	_bottomMargin = bottomMargin;
+	_margins.bottom = bottomMargin;
 	emit marginsChanged();
 }
 
@@ -72,33 +69,33 @@ bool DocumentSettings::autoWidth() const
 double DocumentSettings::leftMargin(Unit unit) const
 {
 	if(unit == Unit::cm)
-		return _leftMargin.value;
+		return _margins.left.value;
 	else
-		return _dpi.x_to<document_units::pixel>(_leftMargin).value;
+		return _dpi.x_to<document_units::pixel>(_margins.left).value;
 }
 
 double DocumentSettings::rightMargin(Unit unit) const
 {
 	if(unit == Unit::cm)
-		return _rightMargin.value;
+		return _margins.right.value;
 	else
-		return _dpi.x_to<document_units::pixel>(_rightMargin).value;
+		return _dpi.x_to<document_units::pixel>(_margins.right).value;
 }
 
 double DocumentSettings::topMargin(Unit unit) const
 {
 	if(unit == Unit::cm)
-		return _topMargin.value;
+		return _margins.top.value;
 	else
-		return _dpi.y_to<document_units::pixel>(_topMargin).value;
+		return _dpi.y_to<document_units::pixel>(_margins.top).value;
 }
 
 double DocumentSettings::bottomMargin(Unit unit) const
 {
 	if(unit == Unit::cm)
-		return _bottomMargin.value;
+		return _margins.bottom.value;
 	else
-		return _dpi.y_to<document_units::pixel>(_bottomMargin).value;
+		return _dpi.y_to<document_units::pixel>(_margins.bottom).value;
 }
 
 

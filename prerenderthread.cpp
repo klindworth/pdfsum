@@ -20,6 +20,7 @@
 
 #include "summarizedocument.h"
 #include "documentpage.h"
+#include "documentsettings.h"
 
 #include <QMutexLocker>
 
@@ -58,7 +59,7 @@ void PrerenderThread::run()
 			}
 			while(m_bPause)
 				sleep(1);
-			m_sdoc->page(i)->renderPage(m_settings, 1.0);
+			m_sdoc->page(i)->renderPage(m_settings->resolution(), 1.0);
 		}
 
 		QMutexLocker locker2(&m_stopmutex);
