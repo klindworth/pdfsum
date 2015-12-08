@@ -30,6 +30,7 @@
 
 class QRubberBand;
 class PdfMarker;
+class PdfMarkerItem;
 class DocumentSettings;
 class DocumentPage;
 class SummarizeDocument;
@@ -47,9 +48,8 @@ class PdfView : public QGraphicsView
 		PdfView(QWidget *parent);
 		~PdfView();
 		void setDocumentSettings(DocumentSettings *settings);
-		void setDocumentMarkerGui(DocumentMarkerGui *gui);
 		DocumentPage* page() const;
-		DocumentMarkerGui* markerGui() const;
+		QList<PdfMarkerItem*> selection() const;
 		
 	public slots:
 		void setPage(DocumentPage *page);
@@ -83,6 +83,9 @@ class PdfView : public QGraphicsView
 		DocumentPage *m_page;
 		//Widget for options like deleting and saving as pdf
 		DocumentMarkerGui *m_gui;
+
+	signals:
+		void selectionChanged(QList<PdfMarkerItem*>);
 };
 
 #endif

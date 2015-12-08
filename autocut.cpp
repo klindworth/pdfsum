@@ -91,21 +91,19 @@ void AutoCut::errorMessageReceived(QString msg)
 
 void AutoCut::cutFile(QDir dirSource, QDir dirTarget, QString fileName)
 {
-	DocumentSettings *settings = new DocumentSettings(document_units::dpi(physicalDpiX()), document_units::dpi(physicalDpiY()), this);
+	_docsettings = std::make_unique<DocumentSettings>(document_units::dpi(physicalDpiX()), document_units::dpi(physicalDpiY()), this);
 	//qDebug(path);
 	std::shared_ptr<SummarizeDocument> doc = SummarizeDocument::loadGui(dirSource.filePath(fileName), this);
 	if(doc->pageCount() > 0)
 	{
 		DocumentPage *page = doc->page(0);
-		page->autoMarkCombined(settings, 250, document_units::centimeter(0.0), true, true);
+		page->autoMarkCombined(*_docsettings, 250, document_units::centimeter(0.0), true, true);
 		//page->autoBoundingBox(settings, 250);
-		const std::deque<PdfMarker*>& markers = page->markers();
+		const std::vector<PdfMarker*>& markers = page->markers();
 		if(markers.size() > 0)
 		{
-			PdfMarker *marker = markers.front();
-			
 			QString input = "\\documentclass[a4paper,10pt]{article}\n\\usepackage{graphicx}\n\\usepackage{pdfpages}\n\\begin{document}\n\\includepdf[";
-			input += marker->toLatexViewport();
+			input += markers.front()->toLatexViewport();
 			input += ", clip=true, pages={1}, fitpaper]{" + fileName + "}\n\\end{document}\n";
 			
 			m_currentRunner = std::make_unique<LatexRunner>(input, dirSource.path(), dirTarget.filePath(fileName), this);

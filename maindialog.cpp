@@ -28,6 +28,7 @@
 #include "summarizedocument.h"
 #include "documentpage.h"
 #include "pdfmarker.h"
+#include "pdfmarkeritem.h"
 #include "latexexportdialog.h"
 #include "prerenderthread.h"
 #include "automarkthread.h"
@@ -49,7 +50,6 @@ MainDialog::MainDialog(QWidget* parent)
 	m_settings = std::make_unique<DocumentSettings>(document_units::dpi(physicalDpiX()), document_units::dpi(physicalDpiY()));
 	//m_settings->setAutoWidth(true, 2.0, 2.0);
 	m_view->setDocumentSettings(documentSettings());
-	m_view->setDocumentMarkerGui(markerProperties);
 	
 	m_scaleFactors = std::vector<double>{0.5, 0.75, 1.0, 1.5, 2.0};
 	
@@ -88,6 +88,8 @@ MainDialog::MainDialog(QWidget* parent)
 	connect(actionForward, SIGNAL(triggered(bool)), this, SLOT(forward()));
 	
 	//loadDocument("/home/kai/tmp/latextest/dso-howto.pdf");
+
+	connect(m_view, &PdfView::selectionChanged, markerProperties, &DocumentMarkerGui::setSelection);
 }
 
 DocumentSettings* MainDialog::documentSettings() const
@@ -122,7 +124,6 @@ void MainDialog::changePage(int number)
 		m_view->setPage(m_sdoc->page(number));
 
 	//refresh remaining stuff
-	markerProperties->setDocumentMarker(nullptr);
 	if(m_renderthread)
 		m_renderthread->setViewingPage(number);
 
@@ -195,14 +196,14 @@ void MainDialog::runAutoMark()
 	{
 		if(removeAutomaticMarker)
 			m_view->page()->removeAllMarkers(true);
-		m_view->page()->autoMarkCombined(documentSettings(), spGreyThreshold->value(), document_units::centimeter(dspHeightThreshold->value()/10.0), !cbCompletePageWidth->isChecked(), cbBoundingBox->isChecked());
+		m_view->page()->autoMarkCombined(*(documentSettings()), spGreyThreshold->value(), document_units::centimeter(dspHeightThreshold->value()/10.0), !cbCompletePageWidth->isChecked(), cbBoundingBox->isChecked());
 		autoMarkFinished();
 	}
 }
 
 void MainDialog::autoMarkPage(DocumentPage *page, bool boundingBox)
 {
-	page->autoMarkCombined(documentSettings(), spGreyThreshold->value(), document_units::centimeter(dspHeightThreshold->value()/10.0), !cbCompletePageWidth->isChecked(), boundingBox);
+	page->autoMarkCombined(*(documentSettings()), spGreyThreshold->value(), document_units::centimeter(dspHeightThreshold->value()/10.0), !cbCompletePageWidth->isChecked(), boundingBox);
 	
 	if(page == m_view->page())
 		m_view->scene()->update();

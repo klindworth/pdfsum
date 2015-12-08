@@ -41,6 +41,12 @@ void DocumentSettings::registerView(PdfView *view)
 	m_view = view;
 }
 
+document_units::rect<document_units::centimeter> DocumentSettings::active_area(document_units::size<document_units::centimeter> sz) const {
+	document_units::size<document_units::centimeter> active_size(sz.width - _margins.left - _margins.right, sz.height - _margins.top - _margins.bottom);
+	document_units::coordinate<document_units::centimeter> active_coord(_margins.left, _margins.top);
+	return document_units::rect<document_units::centimeter>(active_coord, active_size);
+}
+
 void DocumentSettings::setAutoWidth(bool autowidth, document_units::centimeter leftMargin, document_units::centimeter rightMargin)
 {
 	_margins.left = leftMargin;

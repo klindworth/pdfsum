@@ -19,39 +19,38 @@
 #ifndef PDFMARKER_H
 #define PDFMARKER_H
 
-#include <QGraphicsRectItem>
-#include <QRectF>
-
 #include "document_units.h"
+#include <vector>
 
 /**
 	@author Kai Klindworth <KaiKlindworth@web.de>
 */
 
-class DocumentSettings;
-class DocumentMarkerGui;
 class DocumentPage;
 class PdfMarkerItem;
-class PdfView;
+class QString;
 
-class PdfMarker //: public QGraphicsRectItem
+class PdfMarker
 {
 	public:
-		//PdfMarker(DocumentPage *page, const DocumentSettings* settings, const QRectF& rect);
-		PdfMarker(DocumentPage *page, const DocumentSettings* settings, document_units::rect<document_units::centimeter> prect);
+		PdfMarker(DocumentPage *page, document_units::rect<document_units::centimeter> prect);
 		~PdfMarker();
+		PdfMarkerItem* createViewItem(document_units::resolution_setting settings);
 		QString toLatexViewport() const;
-		DocumentPage* page() const;
-		bool automaticMarker() const;
+		DocumentPage* page() const {
+			return _page;
+		}
+		bool automaticMarker() const {
+			return _bAutomaticMarker;
+		}
 		void setAutomaticMarker(bool automarker);
 		document_units::centimeter height() const;
-		PdfMarkerItem* item() const;
-		QRectF rect() const;
-		document_units::rect<document_units::pixel> pixelRect() const;
-		document_units::rect<document_units::centimeter> centimeterRect() const;
-		//void setRect(const QRectF& rect);
-		inline const DocumentSettings* documentSettings() const {
-			return m_settings;
+		inline document_units::rect<document_units::centimeter> rect() const {
+			return _rect;
+		}
+
+		bool operator==(const PdfMarker& marker) const {
+			return marker._rect == _rect;
 		}
 		
 	protected:
@@ -59,12 +58,8 @@ class PdfMarker //: public QGraphicsRectItem
 		
 	private:
 		document_units::rect<document_units::centimeter> _rect;
-		//QRectF m_rect;
-		PdfMarkerItem *m_item;
-		const DocumentSettings* m_settings;
-		DocumentPage *m_page;
-		bool m_bAutomaticMarker;
-
+		DocumentPage *_page;
+		bool _bAutomaticMarker;
 };
 
 #endif

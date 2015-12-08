@@ -31,12 +31,8 @@
 PdfMarkerItem::PdfMarkerItem(PdfMarker *marker, const QRectF& rect) : QGraphicsRectItem(rect)
 {
 	m_marker = marker;
-		
-	QBrush brush(QColor(137, 171, 238, 100), Qt::SolidPattern);
-	QPen pen(QColor(137, 171, 238));
-	pen.setWidth(2);
-	this->setPen(pen);
-	this->setBrush(brush);
+
+	updateStyle(false);
 	
 	this->setFlag(QGraphicsItem::ItemIsSelectable);
 	this->setFlag(QGraphicsItem::ItemIsFocusable);
@@ -47,24 +43,31 @@ PdfMarker* PdfMarkerItem::marker()
 	return m_marker;
 }
 
-void PdfMarkerItem::mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * event )
-{
-	QGraphicsItem::mouseDoubleClickEvent(event);
-
-	
-	if(marker()->documentSettings()->view()->markerGui())
-		marker()->documentSettings()->view()->markerGui()->setDocumentMarker(marker());
-}
-
 void PdfMarkerItem::keyReleaseEvent ( QKeyEvent * event ) 
 {
 	if(event->key() == Qt::Key_Delete)
 	{
-		marker()->documentSettings()->view()->markerGui()->setDocumentMarker(NULL);
-		marker()->page()->removeMarker(marker());
+		marker()->page()->removeMarker(this);
 	}
 	else
 		QGraphicsItem::keyReleaseEvent(event);
+}
+
+QVariant PdfMarkerItem::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+	if(change == QGraphicsItem::ItemSelectedChange)
+		updateStyle(value.toBool());
+	return QGraphicsRectItem::itemChange(change, value);
+}
+
+void PdfMarkerItem::updateStyle(bool selected)
+{
+	QColor color = selected ? QColor(137, 171, 238, 200) : QColor(137, 171, 238, 100);
+	QBrush brush = QBrush(color, Qt::SolidPattern);
+	QPen pen(QColor(137, 171, 238));
+	pen.setWidth(2);
+	this->setPen(pen);
+	this->setBrush(brush);
 }
 
 

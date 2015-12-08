@@ -172,14 +172,9 @@ std::vector<rect> automark_scan(const image_array& bimage, unsigned int threshol
 	return result;
 }
 
-document_units::rect<document_units::centimeter> add_page_margins(const document_units::margins& margins , document_units::rect<document_units::centimeter> rt)
+document_units::rect<document_units::centimeter> add_page_margins(const document_units::margins<document_units::centimeter>& margins , document_units::rect<document_units::centimeter> rt)
 {
-	return rt.move(margins.left, margins.right);
-}
-
-document_units::rect<document_units::pixel> add_page_margins_pixel(const DocumentSettings &settings, document_units::rect<document_units::pixel> rt, double scale)
-{
-	return rt.move(document_units::pixel(settings.leftMargin(Unit::pixel)*scale), document_units::pixel(settings.topMargin(Unit::pixel)*scale));
+	return rt.move(margins.left, margins.top);
 }
 
 document_units::rect<document_units::pixel> descale_and_transform(rect rt, double scale)
@@ -194,29 +189,6 @@ document_units::rect<document_units::pixel> descale_and_transform(rect rt, doubl
 	return document_units::rect<pixel>(coord, sz);
 }
 
-/*std::vector<QRectF> postprocess_results(const std::vector<rect>& old_res, const DocumentSettings& settings, bool ignore_width, double rendered_scale, DocumentPage* page)
-{
-	const unsigned int margin = 2*rendered_scale;
-	std::vector<QRectF> result;
-	for(rect rt : old_res)
-	{
-		auto rtst = descale_and_transform(rt, rendered_scale);
-
-		//auto rect_with_borders = add_page_margins(settings, settings.resolution().to<document_units::centimeter>(rtst));
-		//auto result_rect = rect_with_borders.bounded_grow(settings.resolution().y_to<document_units::centimeter>(document_units::pixel(margin)), settings.active_area(page->pageSize(settings.resolution()))); //TODO: margin wrong...
-
-		auto rect_with_borders = add_page_margins_pixel(settings, rtst, rendered_scale);
-		auto result_rect = rect_with_borders.bounded_grow(document_units::pixel(margin), settings.resolution().to<document_units::pixel>(settings.active_area(page->pageSize(settings.resolution())))); //TODO: margin wrong...
-
-
-		QRectF compat_rect(QPointF(result_rect.start_point().x.value, result_rect.start_point().y.value), QSizeF(result_rect._size.width.value, result_rect._size.height.value));
-
-		result.push_back(compat_rect);
-	}
-
-	return result;
-}*/
-
 std::vector<document_units::rect<document_units::centimeter>> postprocess_results(const std::vector<rect>& old_res, const DocumentSettings& settings, bool ignore_width, double rendered_scale, DocumentPage* page)
 {
 	const document_units::centimeter margin(0.05);
@@ -226,7 +198,14 @@ std::vector<document_units::rect<document_units::centimeter>> postprocess_result
 		auto rtst = descale_and_transform(rt, rendered_scale);
 
 		auto rect_with_borders = add_page_margins(settings.margins(), settings.resolution().to<document_units::centimeter>(rtst));
-		auto result_rect = rect_with_borders.bounded_grow(margin, settings.active_area(page->pageSize(settings.resolution())));
+		auto result_rect = rect_with_borders.bounded_grow(margin, settings.active_area(page->pageSize()));
+
+		if(ignore_width)
+		{
+			auto pagearea = settings.active_area(page->pageSize());
+			result_rect._coordinate.x = pagearea._coordinate.x;
+			result_rect._size.width = pagearea._size.width;
+		}
 
 		result.push_back(result_rect);
 	}
@@ -236,11 +215,12 @@ std::vector<document_units::rect<document_units::centimeter>> postprocess_result
 
 std::vector<document_units::rect<document_units::centimeter>> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, document_units::centimeter heightThreshold, bool ignore_width, bool boundingBox, double rendered_scale, DocumentPage* page)
 {
+	document_units::margins<document_units::pixel> margins = settings.resolution().to<document_units::pixel>(settings.margins());
 	//prepare image
-	const unsigned int lastPixel = qimage.width()  - settings.rightMargin(Unit::pixel) * rendered_scale;
-	const unsigned int lastLine  = qimage.height() - settings.bottomMargin(Unit::pixel) * rendered_scale;
-	const unsigned int startPixel = settings.leftMargin(Unit::pixel)*rendered_scale;
-	const unsigned int startLine  = settings.topMargin(Unit::pixel) * rendered_scale;
+	const unsigned int lastPixel = qimage.width()  - margins.right.value * rendered_scale;
+	const unsigned int lastLine  = qimage.height() - margins.bottom.value * rendered_scale;
+	const unsigned int startPixel = margins.left.value*rendered_scale;
+	const unsigned int startLine  = margins.top.value * rendered_scale;
 
 	const std::size_t lineLength = lastPixel - startPixel;
 	const std::size_t pageHeight = lastLine  - startLine;

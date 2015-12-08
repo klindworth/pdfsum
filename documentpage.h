@@ -20,7 +20,6 @@
 #define DOCUMENTPAGE_H
 
 #include <QImage>
-#include <QLinkedList>
 #include <QMutex>
 #include <memory>
 #include <deque>
@@ -29,9 +28,16 @@
 #include "document_units.h"
 
 class PdfMarker;
+class PdfMarkerItem;
 class DocumentSettings;
 class SummarizeDocument;
 class QGraphicsScene;
+
+struct rendered_page {
+	QImage image;
+	document_units::size<document_units::centimeter> size;
+	double scale;
+};
 
 /**
 	@author Kai Klindworth <KaiKlindworth@web.de>
@@ -41,28 +47,32 @@ class DocumentPage
 	public:
 		DocumentPage(SummarizeDocument *sdoc, int pagenumber);
 		~DocumentPage();
-		void addMarker(PdfMarker *marker);
+		void addMarker(PdfMarker* marker);
 		std::shared_ptr<QImage> renderPage(document_units::resolution_setting settings, double scale);
 		
 		void setGraphicsScene(QGraphicsScene *scene);
 		QGraphicsScene* graphicsScene();
 		void removeMarker(PdfMarker *marker);
+		void removeMarker(PdfMarkerItem *marker);
+		void removeCorrespondingViewMarker(PdfMarker *marker);
 		int number() const;
 		void removeAllMarkers(bool onlyAutomatic);
-		double markedHeight() const;
+		document_units::centimeter markedHeight() const;
 		SummarizeDocument* document();
-		document_units::size<document_units::centimeter> pageSize(document_units::resolution_setting settings) const;
-		const std::deque<PdfMarker*>& markers() const;
+		document_units::size<document_units::centimeter> pageSize() const;
+		const std::vector<PdfMarker*>& markers() const;
 
 	public slots:
-		void autoMarkCombined(const DocumentSettings *settings, uint threshold, document_units::centimeter HeightThreshold, bool determineVert, bool boundingBox);
+		void autoMarkCombined(const DocumentSettings& settings, uint threshold, document_units::centimeter HeightThreshold, bool determineVert, bool boundingBox);
 		
 	protected:
 		std::shared_ptr<QImage> rerenderPage(document_units::resolution_setting settings, double scale);
 
 	private:
 		std::shared_ptr<QImage> m_renderedPage;
-		std::deque<PdfMarker*> m_markers;
+		document_units::size<document_units::centimeter> _pageSize;
+		document_units::resolution_setting _resolution;
+		std::vector<PdfMarker*> _markers;
 		double m_dRenderedScale;
 		const int m_iPageNumber;
 		QGraphicsScene *m_scene;

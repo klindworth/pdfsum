@@ -21,6 +21,7 @@
 #include <QtDebug>
 #include <QRubberBand>
 #include <QMouseEvent>
+#include "pdfmarkeritem.h"
 #include "pdfmarker.h"
 #include "documentsettings.h"
 #include "documentpage.h"
@@ -42,17 +43,6 @@ PdfView::PdfView(QWidget *parent)
 	
 	m_bAddMarkerEnabled = true;
 }
-
-void PdfView::setDocumentMarkerGui(DocumentMarkerGui *gui)
-{
-	m_gui = gui;
-}
-
-DocumentMarkerGui* PdfView::markerGui() const
-{
-	return m_gui;
-}
-
 
 void PdfView::setDocumentSettings(DocumentSettings *settings)
 {
@@ -120,6 +110,9 @@ void PdfView::setPage(DocumentPage* page)
 	{
 		m_page = page;
 		setScene(m_page->graphicsScene());
+		connect(m_page->graphicsScene(), &QGraphicsScene::selectionChanged, [&]() {
+			emit selectionChanged(selection());
+		} );
 
 		//rerenderPage();
 		m_renderedPage = m_page->renderPage(m_settings->resolution(), m_dScale);
@@ -129,9 +122,26 @@ void PdfView::setPage(DocumentPage* page)
 		m_renderedPixmap = std::make_shared<QPixmap>(QPixmap::fromImage(*m_renderedPage));
 
 		scene()->update();
+		emit selectionChanged(selection());
 	}
 	else
 		clear();
+}
+
+QList<PdfMarkerItem*> PdfView::selection() const
+{
+	QList<PdfMarkerItem*> selection;
+	if(m_page->graphicsScene())
+	{
+		auto items = m_page->graphicsScene()->selectedItems();
+		for(auto current_item : items)
+		{
+			PdfMarkerItem* converted_item = qgraphicsitem_cast<PdfMarkerItem*>(current_item);
+			if(converted_item)
+				selection.append(converted_item);
+		}
+	}
+	return selection;
 }
 
 void PdfView::clear()
@@ -164,17 +174,19 @@ void PdfView::drawBackground ( QPainter * painter, const QRectF & rect )
 			pen.setWidth(2);
 			painter->setPen(penMargin);
 			painter->setBrush(brushMargin);
+
+			document_units::margins<document_units::pixel> margins = m_settings->resolution().to<document_units::pixel>(m_settings->margins());
 			
-			QRectF leftMargin(0,0, m_settings->leftMargin(Unit::pixel), scene()->sceneRect().height());
-			QRectF rightMargin(scene()->sceneRect().width() - m_settings->rightMargin(Unit::pixel), 0, m_settings->rightMargin(Unit::pixel), scene()->sceneRect().height());
+			QRectF leftMargin(0,0, margins.left.value, scene()->sceneRect().height());
+			QRectF rightMargin(scene()->sceneRect().width() - margins.right.value, 0, margins.right.value, scene()->sceneRect().height());
 			
 			painter->drawRect(leftMargin);
 			painter->drawRect(rightMargin);
 			//painter->drawRect(rect.intersected(leftMargin));
 			//painter->drawRect(rect.intersected(rightMargin));
 			
-			QRectF topMargin(0,0, scene()->sceneRect().width(), (m_settings->topMargin(Unit::pixel)));
-			QRectF bottomMargin(0, scene()->sceneRect().height() - m_settings->bottomMargin(Unit::pixel), scene()->sceneRect().width(), m_settings->bottomMargin(Unit::pixel));
+			QRectF topMargin(0,0, scene()->sceneRect().width(), margins.top.value);
+			QRectF bottomMargin(0, scene()->sceneRect().height() - margins.bottom.value, scene()->sceneRect().width(), margins.bottom.value);
 			painter->drawRect(topMargin);
 			painter->drawRect(bottomMargin);
 		}
@@ -222,17 +234,14 @@ void PdfView::mouseReleaseEvent(QMouseEvent *event)
 		//if the 'auto width' setting is active, overwrite the position and width of the marked area
 		if(m_settings->autoWidth())
 		{
-			rectf.moveTo(m_settings->leftMargin(Unit::pixel), rectf.y());
-			rectf.setWidth(sceneRect().width() - m_settings->leftMargin(Unit::pixel) - m_settings->rightMargin(Unit::pixel));
+			auto pagearea = m_settings->active_area(m_page->pageSize());
+			crect._coordinate.x = pagearea._coordinate.x;
+			crect._size.width = pagearea._size.width;
 		}
 		//create a marker
-		PdfMarker *marker = new PdfMarker(m_page, m_settings, crect);
-		m_page->addMarker(marker);
+		m_page->addMarker(new PdfMarker(m_page, crect));
 		//hides the temporarily rubberband
 		m_rubberBand->hide();
-		
-		//marker->setSelected(true);
-		m_gui->setDocumentMarker(marker);
 	}
 	QGraphicsView::mouseReleaseEvent(event);
 }

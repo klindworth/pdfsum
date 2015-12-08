@@ -29,13 +29,18 @@ class PdfMarker;
 class PdfMarkerItem : public QGraphicsRectItem
 {
 public:
+	enum { Type = UserType + 1 };
 	PdfMarkerItem(PdfMarker *marker, const QRectF& rect);
 
 	~PdfMarkerItem();
 	PdfMarker* marker();
+	int type() const {
+		return Type;
+	}
 
 protected:
-	void mouseDoubleClickEvent ( QGraphicsSceneMouseEvent * event );
+	QVariant itemChange(GraphicsItemChange change, const QVariant &value);
+	void updateStyle(bool selected);
 	void keyReleaseEvent ( QKeyEvent * event );
 	PdfMarker *m_marker;
 

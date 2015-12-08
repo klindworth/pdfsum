@@ -38,20 +38,7 @@ class DocumentSettings : public QObject
 			return _dpi;
 		}
 
-		inline document_units::dpi dpiX() const {
-			return _dpi.x;
-		}
-
-		inline document_units::dpi dpiY() const {
-			return _dpi.y;
-		}
-
-		inline document_units::rect<document_units::centimeter> active_area(document_units::size<document_units::centimeter> sz) const {
-			document_units::size<document_units::centimeter> active_size(sz.width - _margins.left - _margins.right, sz.height - _margins.top - _margins.bottom);
-			document_units::coordinate<document_units::centimeter> active_coord(_margins.left, _margins.top);
-			return document_units::rect<document_units::centimeter>(active_coord, active_size);
-		}
-
+		document_units::rect<document_units::centimeter> active_area(document_units::size<document_units::centimeter> sz) const;
 		void setAutoWidth(bool autowidth, document_units::centimeter leftMargin, document_units::centimeter rightMargin);
 		bool autoWidth() const;
 		double leftMargin(Unit unit) const;
@@ -59,7 +46,7 @@ class DocumentSettings : public QObject
 		double topMargin(Unit unit) const;
 		double bottomMargin(Unit unit) const;
 
-		document_units::margins margins() const {
+		document_units::margins<document_units::centimeter> margins() const {
 			return _margins;
 		}
 
@@ -71,7 +58,7 @@ class DocumentSettings : public QObject
 		void setBottomMargin(document_units::centimeter bottomMargin);
 		
 	private:
-		document_units::margins _margins;
+		document_units::margins<document_units::centimeter> _margins;
 		document_units::resolution_setting _dpi;
 		bool m_bAutoWidth;
 		PdfView *m_view;

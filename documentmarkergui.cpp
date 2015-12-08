@@ -22,6 +22,7 @@
 
 #include "documentpage.h"
 #include "pdfmarker.h"
+#include "pdfmarkeritem.h"
 #include "latexrunner.h"
 #include "summarizedocument.h"
 
@@ -39,17 +40,26 @@ DocumentMarkerGui::DocumentMarkerGui(QWidget* parent)
 
 void DocumentMarkerGui::copyToAllOtherPages()
 {
-	for(DocumentPage* cpage : *(m_marker->page()->document()))
+	for(DocumentPage* cpage : *(m_marker->marker()->page()->document()))
 	{
-		if(cpage != m_marker->page())
-			cpage->addMarker(new PdfMarker(cpage, m_marker->documentSettings(), m_marker->centimeterRect()));
+		if(cpage != m_marker->marker()->page())
+			cpage->addMarker(new PdfMarker(cpage, m_marker->marker()->rect()));
 	}
 }
 
-void DocumentMarkerGui::setDocumentMarker(PdfMarker *marker)
+void DocumentMarkerGui::setSelection(const QList<PdfMarkerItem*>& markerlist)
 {
-	m_marker = marker;
-	this->setEnabled(marker != nullptr);
+	assert(markerlist.size() < 2);
+	if(markerlist.empty())
+	{
+		setEnabled(false);
+		m_marker = nullptr;
+	}
+	else
+	{
+		m_marker = markerlist.first();
+		setEnabled(true);
+	}
 }
 
 void DocumentMarkerGui::saveToPdf()
@@ -58,11 +68,11 @@ void DocumentMarkerGui::saveToPdf()
 	if(!saveas.isEmpty())
 	{
 		saveas += ".pdf";
-		QFileInfo fileinfo(m_marker->page()->document()->filepath());
+		QFileInfo fileinfo(m_marker->marker()->page()->document()->filepath());
 		
 		QString input = "\\documentclass[a4paper,10pt]{article}\n\\usepackage{graphicx}\n\\usepackage{pdfpages}\n\\begin{document}\n\\includepdf[";
-		input += m_marker->toLatexViewport();
-		input += ", clip=true, pages={" + QString::number(m_marker->page()->number() + 1) +  "}, fitpaper]{" + fileinfo.fileName() + "}\n\\end{document}\n";
+		input += m_marker->marker()->toLatexViewport();
+		input += ", clip=true, pages={" + QString::number(m_marker->marker()->page()->number() + 1) +  "}, fitpaper]{" + fileinfo.fileName() + "}\n\\end{document}\n";
 		
 		QString wd = fileinfo.absoluteDir().absolutePath();
 
@@ -75,8 +85,7 @@ void DocumentMarkerGui::removeMarker()
 {
 	if(m_marker)
 	{
-		m_marker->page()->removeMarker(m_marker);
-		setDocumentMarker(nullptr);
+		m_marker->marker()->page()->removeMarker(m_marker);
 	}
 }
 

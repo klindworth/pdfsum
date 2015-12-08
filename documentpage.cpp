@@ -31,7 +31,11 @@
 
 #include "automarker.h"
 
-DocumentPage::DocumentPage(SummarizeDocument *sdoc, int pagenumber) : m_iPageNumber(pagenumber), m_sdoc(sdoc)
+DocumentPage::DocumentPage(SummarizeDocument *sdoc, int pagenumber) :
+	_pageSize(document_units::centimeter(0), document_units::centimeter(0)),
+	_resolution(document_units::dpi(72), document_units::dpi(72)),
+	m_iPageNumber(pagenumber),
+	m_sdoc(sdoc)
 {
 	m_scene = nullptr;
 	m_dRenderedScale = 1.0;
@@ -47,34 +51,28 @@ int DocumentPage::number() const
 	return m_iPageNumber;
 }
 
-document_units::size<document_units::centimeter> DocumentPage::pageSize(document_units::resolution_setting settings) const
+document_units::size<document_units::centimeter> DocumentPage::pageSize() const
 {
 	if(m_renderedPage)
 	{
-		using namespace document_units;
-
-		pixel width(m_renderedPage->width() / m_dRenderedScale);
-		pixel height(m_renderedPage->height() / m_dRenderedScale);
-		size<pixel> pixelsize(width, height);
-
-		return settings.to<centimeter>(pixelsize);
+		return _pageSize;
 	}
 	else
 		throw std::runtime_error("no rendered page");
 }
 
-void DocumentPage::addMarker(PdfMarker *marker)
+void DocumentPage::addMarker(PdfMarker* marker)
 {
 	QMutexLocker locker(&m_markermutex);
 
-	if(graphicsScene() && marker->item())
-		m_scene->addItem(marker->item());
+	if(graphicsScene())
+		m_scene->addItem(marker->createViewItem(_resolution));
 	else
 		qWarning("no scene");
-	
+
 	//insert the marker at the right position in the list. the list is ordered by position y
-	auto it = std::lower_bound(m_markers.begin(), m_markers.end(), marker, [](PdfMarker* lhs, PdfMarker *rhs){return lhs->rect().y() < rhs->rect().y();});
-	m_markers.insert(it, marker);
+	auto it = std::lower_bound(_markers.begin(), _markers.end(), marker, [](const PdfMarker* lhs, const PdfMarker* rhs){return lhs->rect()._coordinate.y < rhs->rect()._coordinate.y;});
+	_markers.insert(it, marker);
 }
 
 void DocumentPage::setGraphicsScene(QGraphicsScene *scene)
@@ -108,77 +106,95 @@ std::shared_ptr<QImage> DocumentPage::rerenderPage(document_units::resolution_se
 	m_renderedPage = document()->renderedPage(m_iPageNumber, scale, settings);
 	m_dRenderedScale = scale;
 
+	using namespace document_units;
+
+	pixel width(m_renderedPage->width() / m_dRenderedScale);
+	pixel height(m_renderedPage->height() / m_dRenderedScale);
+	size<pixel> pixelsize(width, height);
+
+	_pageSize = settings.to<centimeter>(pixelsize);
+	_resolution = settings;
+
 	return m_renderedPage;
 }
 
-void DocumentPage::removeMarker(PdfMarker *marker)
+void DocumentPage::removeMarker(PdfMarkerItem *marker)
 {
 	QMutexLocker locker(&m_markermutex);
-	m_markers.erase(std::remove(m_markers.begin(), m_markers.end(), marker), m_markers.end());
-	
-	delete marker;
+	graphicsScene()->removeItem(marker);
+
+	_markers.erase(std::remove(_markers.begin(), _markers.end(), marker->marker()), _markers.end());
+}
+
+void DocumentPage::removeMarker(PdfMarker* marker)
+{
+	QMutexLocker locker(&m_markermutex);
+
+	_markers.erase(std::remove(_markers.begin(), _markers.end(), marker), _markers.end());
+}
+
+void DocumentPage::removeCorrespondingViewMarker(PdfMarker* marker)
+{
+	for(QGraphicsItem *current_item : graphicsScene()->items())
+	{
+		PdfMarkerItem* converted_item = qgraphicsitem_cast<PdfMarkerItem*>(current_item);
+		if(converted_item && marker == converted_item->marker())
+		{
+			graphicsScene()->removeItem(current_item);
+		}
+	}
 }
 
 void DocumentPage::removeAllMarkers(bool onlyAutomatic)
 {
 	QMutexLocker locker(&m_markermutex);
-	auto eval = [=](PdfMarker* marker) {
-		return !marker || marker->automaticMarker() || !onlyAutomatic;
+	auto eval = [=](const PdfMarker* marker) {
+		return marker->automaticMarker() || !onlyAutomatic;
 	};
 
-	std::for_each(m_markers.begin(), m_markers.end(), [=](PdfMarker *& marker){
+	std::for_each(_markers.begin(), _markers.end(), [=](PdfMarker *& marker){
 		if(eval(marker))
 			delete marker;
 		marker = nullptr;
 	});
 
-	auto it = std::remove_if(m_markers.begin(), m_markers.end(), eval);
+	auto it = std::remove(_markers.begin(), _markers.end(), nullptr);
 
-	m_markers.erase(it, m_markers.end());
+	_markers.erase(it, _markers.end());
 }
 
-void DocumentPage::autoMarkCombined(const DocumentSettings *settings, uint threshold, document_units::centimeter heightThreshold, bool determineVert, bool boundingBox)
+void DocumentPage::autoMarkCombined(const DocumentSettings& settings, uint threshold, document_units::centimeter heightThreshold, bool determineVert, bool boundingBox)
 {
 	if(!m_renderedPage)
-		renderPage(settings->resolution(), 1.0);
+		renderPage(settings.resolution(), 1.0);
 	
 	if(m_renderedPage)
 	{
-		std::vector<document_units::rect<document_units::centimeter>> res = autoMarkCombinedInternal(*m_renderedPage, *settings, threshold, heightThreshold, !determineVert, boundingBox, m_dRenderedScale, this);
+		std::vector<document_units::rect<document_units::centimeter>> res = autoMarkCombinedInternal(*m_renderedPage, settings, threshold, heightThreshold, !determineVert, boundingBox, m_dRenderedScale, this);
 		for(auto rt : res)
 		{
-			/*using namespace document_units;
-
-			//document_units::rect<document_units::pixel>
-			document_units::rect<pixel> prect(document_units::coordinate<pixel>(pixel(rt.x()), pixel(rt.y())), document_units::size<pixel>(pixel(rt.width()), pixel(rt.height())));
-			document_units::rect<centimeter> crect = settings->resolution().to<centimeter>(prect);*/
-
-			PdfMarker *marker = new PdfMarker(this, settings, rt);
+			PdfMarker *marker = new PdfMarker(this, rt);
 			marker->setAutomaticMarker(true);
 			addMarker(marker);
 		}
 	}
 }
 
-double DocumentPage::markedHeight() const
+document_units::centimeter DocumentPage::markedHeight() const
 {
-	double result = 0.0;
-	for(PdfMarker * marker : m_markers)
-		result += marker->height().value;
-	
-	return result;
+	return std::accumulate(_markers.begin(), _markers.end(), document_units::centimeter(0.0), [](document_units::centimeter sum, const PdfMarker* marker) {
+		return sum + marker->height();
+	});
+
 }
 
-const std::deque<PdfMarker *>& DocumentPage::markers() const
+const std::vector<PdfMarker*>& DocumentPage::markers() const
 {
-	return m_markers;
+	return _markers;
 }
 
 DocumentPage::~DocumentPage()
 {
-	for(PdfMarker * marker : m_markers)
-		delete marker;
-
 	if(m_scene)
 		delete m_scene;
 }

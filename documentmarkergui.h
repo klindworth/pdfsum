@@ -27,7 +27,7 @@
 #include <QProcess>
 #include <memory>
 
-class PdfMarker;
+class PdfMarkerItem;
 class LatexRunner;
 
 class DocumentMarkerGui : public QWidget, private Ui::Form
@@ -37,7 +37,9 @@ class DocumentMarkerGui : public QWidget, private Ui::Form
 	public:
 		DocumentMarkerGui(QWidget* parent = 0);
 		~DocumentMarkerGui();
-		void setDocumentMarker(PdfMarker *marker);
+
+	public slots:
+		void setSelection(const QList<PdfMarkerItem*>& markerlist);
 
 	protected slots:
 		void removeMarker();
@@ -46,7 +48,7 @@ class DocumentMarkerGui : public QWidget, private Ui::Form
 		
 		
 	protected:
-		PdfMarker *m_marker;
+		PdfMarkerItem *m_marker;
 		std::unique_ptr<LatexRunner> m_runner;
 };
 

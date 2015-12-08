@@ -29,8 +29,11 @@ LatexRunner::LatexRunner(const QString& input, const QString& wd, const QString&
 	m_tmppath.setPath(QDir::tempPath());
 	qDebug(m_tmppath.absolutePath().toLatin1());
 	
-	connect(m_proc, SIGNAL(finished( int, QProcess::ExitStatus )), this, SLOT(latexFinished(int, QProcess::ExitStatus)));
-	connect(m_proc, SIGNAL(error( QProcess::ProcessError )), this, SLOT(latexError(QProcess::ProcessError)));
+	//connect(m_proc, SIGNAL(finished( int, QProcess::ExitStatus )), this, SLOT(latexFinished(int, QProcess::ExitStatus)));
+	//connect(m_proc, SIGNAL(error( QProcess::ProcessError )), this, SLOT(latexError(QProcess::ProcessError)));
+
+	connect(m_proc, static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), this, &LatexRunner::latexFinished);
+	connect(m_proc, static_cast<void (QProcess::*)(QProcess::ProcessError)>(&QProcess::error), this, &LatexRunner::latexError);
 	
 	m_proc->setWorkingDirectory(wd);
 	QStringList args;

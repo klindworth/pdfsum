@@ -1,6 +1,8 @@
 #ifndef DOCUMENT_UNITS_H
 #define DOCUMENT_UNITS_H
 
+#include <algorithm>
+
 namespace document_units
 {
 	const double inch_factor = 2.54;
@@ -134,6 +136,13 @@ namespace document_units
 		size<T> _size;
 	};
 
+	template<typename T>
+	struct margins {
+		margins(T ptop, T pleft, T pbottom, T pright) : top(ptop), left(pleft), bottom(pbottom), right(pright) {}
+
+		T top, left, bottom, right;
+	};
+
 	inline inch::inch(centimeter pvalue) : value(pvalue.value / inch_factor) {}
 	inline inch::inch(pixel pvalue, dpi resolution) : value(static_cast<double>(pvalue.value) / resolution.value) {}
 	inline centimeter::centimeter(inch pvalue) : value(pvalue.value * inch_factor) {}
@@ -160,6 +169,11 @@ namespace document_units
 		}
 
 		template<typename desired, typename T>
+		inline margins<desired> to(margins<T> value) const {
+			return margins<desired>(desired(value.top, y), desired(value.left, x), desired(value.bottom, y), desired(value.right, x));
+		}
+
+		template<typename desired, typename T>
 		inline desired x_to(T value) const {
 			return desired(value, x);
 		}
@@ -172,22 +186,29 @@ namespace document_units
 		dpi x, y;
 	};
 
-	struct margins {
-		margins(centimeter ptop, centimeter pleft, centimeter pbottom, centimeter pright) : top(ptop), left(pleft), bottom(pbottom), right(pright) {}
-
-		centimeter top, left, bottom, right;
-	};
-
 	template<typename T>
-	bool operator<(const units<T>& lhs, const units<T>& rhs)
-	{
+	bool operator<(const units<T>& lhs, const units<T>& rhs) {
 		return lhs.raw_value() < rhs.raw_value();
 	}
 
 	template<typename T>
-	bool operator==(const units<T>& lhs, const units<T>& rhs)
-	{
+	bool operator==(const units<T>& lhs, const units<T>& rhs) {
 		return lhs.raw_value() == rhs.raw_value();
+	}
+
+	template<typename T>
+	bool operator==(const size<T>& lhs, const size<T>& rhs)	{
+		return (lhs.height == rhs.height) && (lhs.width == rhs.width);
+	}
+
+	template<typename T>
+	bool operator==(const coordinate<T>& lhs, const coordinate<T>& rhs) {
+		return (lhs.x == rhs.x) && (lhs.y == rhs.y);
+	}
+
+	template<typename T>
+	bool operator==(const rect<T>& lhs, const rect<T>& rhs) {
+		return (lhs._size == rhs._size) && (lhs._coordinate == rhs._coordinate);
 	}
 }
 

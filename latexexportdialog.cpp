@@ -116,7 +116,7 @@ QString LatexExportDialog::createLatex(bool bComplete, bool bAbsolutePaths)
 		else
 		{
 			output += "\\usepackage{graphicx}\n";
-			output += "\\usepackage[paper=a4paper,left=" + QString::number(m_settings->leftMargin(Unit::cm)*10.0) + "mm,right=1mm,top=5mm,bottom=5mm]{geometry}\n";
+			output += "\\usepackage[paper=a4paper,left=" + QString::number(m_settings->margins().left.value*10.0) + "mm,right=1mm,top=5mm,bottom=5mm]{geometry}\n";
 		}
 		output += "\\begin{document}\n";
 	}
@@ -132,21 +132,23 @@ QString LatexExportDialog::createLatex(bool bComplete, bool bAbsolutePaths)
 	
 	double usedHeight = 0.0;
 	for(int i = 0; i < count; ++i)
-	{	if(usedHeight + m_sdoc->page(i)->markedHeight() > dPageHeight - usedHeight && cbCompletePage->isChecked())
+	{
+		if(usedHeight + m_sdoc->page(i)->markedHeight().value > dPageHeight - usedHeight && cbCompletePage->isChecked())
 		{
 			usedHeight = 0;
 			output += "\\pagebreak\n";
 		}
 		
-		usedHeight += m_sdoc->page(i)->markedHeight();
+		usedHeight += m_sdoc->page(i)->markedHeight().value;
 		
-		const std::deque<PdfMarker*>& list = m_sdoc->page(i)->markers();
-		for(std::deque<PdfMarker*>::const_iterator it = list.cbegin(); it != list.cend(); ++it)
+		//const std::deque<PdfMarker*>& list = m_sdoc->page(i)->markers();
+		//for(std::deque<PdfMarker*>::const_iterator it = list.cbegin(); it != list.cend(); ++it)
+		for(const PdfMarker* marker : m_sdoc->page(i)->markers())
 		{
 			if(bIncludePdf)
-				output += "\\includepdf[fitpaper, clip=true," + (*it)->toLatexViewport()+ ", pages={" + QString::number(i+1) + "}" + sZoom + "]{" + path +"}\n";
+				output += "\\includepdf[fitpaper, clip=true," + marker->toLatexViewport()+ ", pages={" + QString::number(i+1) + "}" + sZoom + "]{" + path +"}\n";
 			else
-				output += "\\includegraphics*[" + (*it)->toLatexViewport()+ ", page=" + QString::number(i+1) + sZoom + "]{" + path +"}\\\\\n";
+				output += "\\includegraphics*[" + marker->toLatexViewport()+ ", page=" + QString::number(i+1) + sZoom + "]{" + path +"}\\\\\n";
 		}
 	}
 	if(bComplete)
