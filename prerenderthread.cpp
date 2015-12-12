@@ -24,7 +24,7 @@
 
 #include <QMutexLocker>
 
-PrerenderThread::PrerenderThread(DocumentSettings *settings, std::shared_ptr<SummarizeDocument>& doc)
+PrerenderThread::PrerenderThread(std::shared_ptr<DocumentSettings> settings, std::shared_ptr<SummarizeDocument>& doc)
  : QThread(), m_sdoc(doc)
 {
 	m_settings = settings;

@@ -51,6 +51,10 @@ LatexRunner::LatexRunner(const QString& input, const QString& wd, const QString&
 	m_proc->write(input.toLatin1());
 }
 
+bool LatexRunner::isRunning() const
+{
+	return m_proc->state() != QProcess::NotRunning;
+}
 
 void LatexRunner::latexFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
@@ -92,8 +96,8 @@ void LatexRunner::latexError(QProcess::ProcessError err)
 
 LatexRunner::~LatexRunner()
 {
-	m_proc->terminate();
-	//delete m_proc;
+	if(m_proc->state() != QProcess::NotRunning)
+		m_proc->kill();
 }
 
 

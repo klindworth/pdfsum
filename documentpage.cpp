@@ -173,7 +173,7 @@ void DocumentPage::autoMarkCombined(const DocumentSettings& settings, uint thres
 
 	if(_renderedPage)
 	{
-		std::vector<document_units::rect<document_units::centimeter>> res = autoMarkCombinedInternal(_renderedPage->image, settings, threshold, heightThreshold, !determineVert, boundingBox, _renderedPage->scale, this);
+		std::vector<document_units::rect<document_units::centimeter>> res = autoMarkCombinedInternal(_renderedPage->image, settings, threshold, heightThreshold, !determineVert, boundingBox, _renderedPage->scale, pageSize());
 		for(auto rt : res)
 		{
 			PdfMarker *marker = new PdfMarker(this, rt);
@@ -188,7 +188,6 @@ document_units::centimeter DocumentPage::markedHeight() const
 	return std::accumulate(_markers.begin(), _markers.end(), document_units::centimeter(0.0), [](document_units::centimeter sum, const PdfMarker* marker) {
 		return sum + marker->height();
 	});
-
 }
 
 const std::vector<PdfMarker*>& DocumentPage::markers() const

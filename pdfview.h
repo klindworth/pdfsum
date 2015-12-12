@@ -24,8 +24,6 @@
 #include <QImage>
 #include <QList>
 
-#include <poppler-qt5.h>
-
 #include <memory>
 
 class QRubberBand;
@@ -48,14 +46,13 @@ class PdfView : public QGraphicsView
 	public:
 		PdfView(QWidget *parent);
 		~PdfView();
-		void setDocumentSettings(DocumentSettings *settings);
+		void setDocumentSettings(std::shared_ptr<DocumentSettings> settings);
 		DocumentPage* page() const;
 		QList<PdfMarkerItem*> selection() const;
 		
 	public slots:
 		void setPage(DocumentPage *page);
 		void setZoom(double dZoom);
-		void changeAutoWidth(bool activate, document_units::centimeter leftMargin, document_units::centimeter rightMargin);
 		void setAddMarkerEnabled(bool enable);
 		void refreshView();
 		void clear();
@@ -77,7 +74,7 @@ class PdfView : public QGraphicsView
 		//current zoomfactor
 		double m_dScale;
 		//?
-		DocumentSettings *m_settings;
+		std::shared_ptr<DocumentSettings> _settings;
 		//manual creation of markers enabled
 		bool m_bAddMarkerEnabled;
 		//current page (owned by the document)

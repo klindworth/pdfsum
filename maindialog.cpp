@@ -47,9 +47,9 @@ MainDialog::MainDialog(QWidget* parent)
 	actionBack->setEnabled(false);
 	actionForward->setEnabled(false);
 	
-	m_settings = std::make_unique<DocumentSettings>(document_units::dpi(physicalDpiX()), document_units::dpi(physicalDpiY()));
+	m_settings = std::make_shared<DocumentSettings>(document_units::dpi(physicalDpiX()), document_units::dpi(physicalDpiY()));
 	//m_settings->setAutoWidth(true, 2.0, 2.0);
-	m_view->setDocumentSettings(documentSettings());
+	m_view->setDocumentSettings(m_settings);
 	
 	m_scaleFactors = std::vector<double>{0.5, 0.75, 1.0, 1.5, 2.0};
 	
@@ -65,29 +65,19 @@ MainDialog::MainDialog(QWidget* parent)
 	toolBar->addWidget(m_cbZoom);
 	
 	connect(m_cbZoom, SIGNAL(currentIndexChanged(int)), this, SLOT(changeZoom(int)));
-	connect(dsLeftMargin, SIGNAL(valueChanged(double)), this, SLOT(changeAutoWidth()));
-	connect(dsRightMargin, SIGNAL(valueChanged(double)), this, SLOT(changeAutoWidth()));
-	//connect(dsLeftMargin,  &QDoubleSpinBox::valueChanged, this, &MainDialog::changeAutoWidth);
-	//connect(dsRightMargin, &QDoubleSpinBox::valueChanged, this, &MainDialog::changeAutoWidth);
-	connect(cbActivateAutoWidth, SIGNAL(stateChanged(int)), this, SLOT(changeAutoWidth()));
+	connect(dsLeftMargin, SIGNAL(valueChanged(double)), this, SLOT(change_margins()));
+	connect(dsRightMargin, SIGNAL(valueChanged(double)), this, SLOT(change_margins()));
+	connect(dsTopMargin, SIGNAL(valueChanged(double)), this, SLOT(change_margins()));
+	connect(dsBottomMargin, SIGNAL(valueChanged(double)), this, SLOT(change_margins()));
+	connect(cbActivateAutoWidth, SIGNAL(stateChanged(int)), this, SLOT(change_margins()));
 	connect(m_cbPage, SIGNAL(currentIndexChanged(int)), this, SLOT(changePage(int)));
 	connect(pbAutoMark, SIGNAL(clicked()), this, SLOT(runAutoMark()));
 	connect(actionEnableMarker, SIGNAL(toggled(bool)), m_view, SLOT(setAddMarkerEnabled(bool)));
 	connect(action_open, SIGNAL(triggered( bool )), this, SLOT(openDocument()));
 	connect(actionAutocut, SIGNAL(triggered(bool)), this, SLOT(openAutocut()));
-	//connect(dsTopMargin, &QDoubleSpinBox::valueChanged, documentSettings(), SLOT(setTopMargin(double)));
-	connect(dsTopMargin, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), [&](double margin) {
-		documentSettings()->setTopMargin(document_units::centimeter(margin));
-	});
-	//connect(dsBottomMargin, &QDoubleSpinBox::valueChanged, documentSettings(), SLOT(setBottomMargin(double)));
-	connect(dsTopMargin, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), [&](double margin) {
-		documentSettings()->setBottomMargin(document_units::centimeter(margin));
-	});
 	connect(actionLatex, SIGNAL(triggered( bool )), this, SLOT(exportLatex()));
 	connect(actionBack, SIGNAL(triggered(bool)), this, SLOT(backward()));
 	connect(actionForward, SIGNAL(triggered(bool)), this, SLOT(forward()));
-	
-	//loadDocument("/home/kai/tmp/latextest/dso-howto.pdf");
 
 	connect(m_view, &PdfView::selectionChanged, markerProperties, &DocumentMarkerGui::setSelection);
 }
@@ -139,9 +129,13 @@ void MainDialog::refreshNavigationButtons()
 	}
 }
 
-void MainDialog::changeAutoWidth()
+void MainDialog::change_margins()
 {
-	m_view->changeAutoWidth(cbActivateAutoWidth->checkState() == Qt::Checked, document_units::centimeter(dsLeftMargin->value()), document_units::centimeter(dsRightMargin->value()));
+	document_units::margins<document_units::centimeter> margins(document_units::centimeter(dsTopMargin->value()),
+																document_units::centimeter(dsLeftMargin->value()),
+																document_units::centimeter(dsBottomMargin->value()),
+																document_units::centimeter(dsRightMargin->value()));
+	m_settings->set_margins(cbActivateAutoWidth->checkState() == Qt::Checked, margins);
 }
 
 void MainDialog::changeZoom(int iIndex)

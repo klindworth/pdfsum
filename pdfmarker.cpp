@@ -18,7 +18,7 @@
  ***************************************************************************/
 #include "pdfmarker.h"
 
-#include <QStringBuilder>
+#include <QString>
 
 #include "documentpage.h"
 #include "pdfmarkeritem.h"
@@ -55,17 +55,17 @@ document_units::centimeter PdfMarker::height() const
 	return rect()._size.height;
 }
 
+QString createLatexViewportString(document_units::rect<document_units::centimeter> cmrect, document_units::size<document_units::centimeter> page)
+{
+	document_units::coordinate<document_units::centimeter> bottom_left(cmrect.start_point().x, page.height - cmrect.end_point().y);
+	document_units::coordinate<document_units::centimeter> top_right  (cmrect.end_point().x,   page.height - cmrect.start_point().y);
+
+	return QString("viewport= %1cm %2cm %3cm %4cm").arg(bottom_left.x.value).arg(bottom_left.y.value).arg(top_right.x.value).arg(top_right.y.value);
+}
+
 QString PdfMarker::toLatexViewport() const
 {
-	document_units::rect<document_units::centimeter> cmrect = rect();
-	document_units::centimeter pgheight = page()->pageSize().height;
-
-	document_units::coordinate<document_units::centimeter> bottom_left(cmrect.start_point().x, pgheight - cmrect.end_point().y);
-	document_units::coordinate<document_units::centimeter> top_right  (cmrect.end_point().x,   pgheight - cmrect.start_point().y);
-
-	QString text = QString("viewport= %1cm %2cm %3cm %4cm").arg(bottom_left.x.value).arg(bottom_left.y.value).arg(top_right.x.value).arg(top_right.y.value);
-
-	return text;
+	return createLatexViewportString(rect(), page()->pageSize());
 }
 
 

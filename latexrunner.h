@@ -33,6 +33,7 @@ class LatexRunner : public QObject
 	public:
 		LatexRunner(const QString& input, const QString& wd, const QString& dest, QObject *parent = 0);
 		~LatexRunner();
+		bool isRunning() const;
 		
 	protected slots:
 		void latexFinished(int exitCode, QProcess::ExitStatus exitStatus);	

@@ -32,7 +32,7 @@
 PdfView::PdfView(QWidget *parent)
  : QGraphicsView(parent)
 {
-	m_settings = nullptr;
+	_settings = nullptr;
 	m_rubberBand = std::make_unique<QRubberBand>(QRubberBand::Rectangle, this);
 	
 	m_dScale = 1.0;
@@ -44,22 +44,10 @@ PdfView::PdfView(QWidget *parent)
 	m_bAddMarkerEnabled = true;
 }
 
-void PdfView::setDocumentSettings(DocumentSettings *settings)
+void PdfView::setDocumentSettings(std::shared_ptr<DocumentSettings> settings)
 {
-	m_settings = settings;
-	settings->registerView(this);
-	connect(m_settings, SIGNAL(marginsChanged()), this, SLOT(refreshView()));
-}
-
-/**
-* Updates the 'auto width' setting for new markers
-* @param activate Enable/Disable the 'auto width'
-* @param leftMargin The left margin in cm
-* @param rightMargin The right margin in cm
-*/
-void PdfView::changeAutoWidth(bool activate, document_units::centimeter leftMargin, document_units::centimeter rightMargin)
-{
-	m_settings->setAutoWidth(activate, leftMargin, rightMargin);
+	_settings = settings;
+	connect(_settings.get(), &DocumentSettings::marginsChanged, this, &PdfView::refreshView);
 }
 
 /**
@@ -92,7 +80,7 @@ void PdfView::setZoom(double dZoom)
 		double scaleChange = dZoom/m_dScale;
 		m_dScale = dZoom;
 		//rerenderPage();
-		_renderedPage = m_page->render_page(m_settings->resolution(), m_dScale);
+		_renderedPage = m_page->render_page(_settings->resolution(), m_dScale);
 		m_renderedPixmap = std::make_shared<QPixmap>(QPixmap::fromImage(_renderedPage->image));
 		scale(scaleChange, scaleChange);
 	}
@@ -108,7 +96,7 @@ void PdfView::setPage(DocumentPage* page)
 	if(page)
 	{
 		m_page = page;
-		_renderedPage = m_page->render_page(m_settings->resolution(), m_dScale);
+		_renderedPage = m_page->render_page(_settings->resolution(), m_dScale);
 
 		assert(m_page->graphicsScene()->thread() == thread());
 		setScene(m_page->graphicsScene());
@@ -164,7 +152,7 @@ void PdfView::drawBackground ( QPainter * painter, const QRectF & rect )
 		QRectF source(rect.x() * m_dScale, rect.y() * m_dScale, rect.width() * m_dScale, rect.height() * m_dScale);
 		painter->drawPixmap(rect, *m_renderedPixmap, source);
 		
-		if(m_settings->autoWidth())
+		if(_settings->autoWidth())
 		{
 			QBrush brushMargin(QColor(255, 91, 91, 100), Qt::SolidPattern);
 			QPen penMargin(QColor(255, 91, 91));
@@ -172,7 +160,7 @@ void PdfView::drawBackground ( QPainter * painter, const QRectF & rect )
 			painter->setPen(penMargin);
 			painter->setBrush(brushMargin);
 
-			document_units::margins<document_units::pixel> margins = m_settings->resolution().to<document_units::pixel>(m_settings->margins());
+			document_units::margins<document_units::pixel> margins = _settings->resolution().to<document_units::pixel>(_settings->margins());
 			
 			QRectF leftMargin(0,0, margins.left.value, scene()->sceneRect().height());
 			QRectF rightMargin(scene()->sceneRect().width() - margins.right.value, 0, margins.right.value, scene()->sceneRect().height());
@@ -217,7 +205,8 @@ void PdfView::mouseMoveEvent(QMouseEvent *event)
 */
 void PdfView::mouseReleaseEvent(QMouseEvent *event)
 {
-	if (!m_rubberBand->size().isEmpty() && scene() && m_settings && m_bAddMarkerEnabled)
+	const int size_threshold = 5;
+	if (!m_rubberBand->size().isEmpty() && scene() && _settings && m_bAddMarkerEnabled && m_rubberBand->size().width() > size_threshold && m_rubberBand->size().height() > size_threshold)
 	{
 		QPointF pos = mapToScene(m_rubberBand->pos()); //m_rubberBand->rect's pos is 0,0, so ask for pos seperatly
 		QRectF rectf = QRectF(pos, mapToScene(m_rubberBand->rect()).boundingRect().size());
@@ -226,12 +215,12 @@ void PdfView::mouseReleaseEvent(QMouseEvent *event)
 
 		//document_units::rect<document_units::pixel>
 		document_units::rect<pixel> prect(document_units::coordinate<pixel>(pixel(rectf.x()), pixel(rectf.y())), document_units::size<pixel>(pixel(rectf.width()), pixel(rectf.height())));
-		document_units::rect<centimeter> crect = m_settings->resolution().to<centimeter>(prect);
+		document_units::rect<centimeter> crect = _settings->resolution().to<centimeter>(prect);
 		
 		//if the 'auto width' setting is active, overwrite the position and width of the marked area
-		if(m_settings->autoWidth())
+		if(_settings->autoWidth())
 		{
-			auto pagearea = m_settings->active_area(m_page->pageSize());
+			auto pagearea = _settings->active_area(m_page->pageSize());
 			crect._coordinate.x = pagearea._coordinate.x;
 			crect._size.width = pagearea._size.width;
 		}

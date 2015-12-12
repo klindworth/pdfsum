@@ -35,14 +35,14 @@ class PrerenderThread : public QThread
 	Q_OBJECT
 
 	public:
-		PrerenderThread(DocumentSettings *settings, std::shared_ptr<SummarizeDocument> &doc);
+		PrerenderThread(std::shared_ptr<DocumentSettings> settings, std::shared_ptr<SummarizeDocument> &doc);
 		~PrerenderThread();
 		void stop();
 		void pause(bool pause = true);
 		void setViewingPage(int number);
 		
 	protected:
-		DocumentSettings *m_settings;
+		std:shared_ptr<DocumentSettings> m_settings;
 		std::shared_ptr<SummarizeDocument> m_sdoc;
 		void run();
 		int m_currentPage, m_pagecount;

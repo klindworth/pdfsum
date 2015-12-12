@@ -36,7 +36,6 @@ class LatexExportDialog : public QDialog, private Ui::Dialog
 	public:
 		LatexExportDialog(QWidget* parent = 0);
 		LatexExportDialog(std::shared_ptr<SummarizeDocument> &sdoc, DocumentSettings *settings, QWidget* parent = 0);
-		~LatexExportDialog();
 		
 		void setSummarizeDocument(std::shared_ptr<SummarizeDocument> &sdoc);
 		void setDocumentSettings(DocumentSettings *settings);
@@ -52,6 +51,8 @@ class LatexExportDialog : public QDialog, private Ui::Dialog
 		void statusMessageReceived(QString message);
 		void pdfCreationFinished();
 
+	protected:
+		void closeEvent(QCloseEvent *event) override;
 		
 	private:
 		void init();

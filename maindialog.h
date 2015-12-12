@@ -42,7 +42,7 @@ class MainDialog : public QMainWindow, private Ui::MainWindow
 
 	public slots:
 		void changeZoom(int index);
-		void changeAutoWidth();
+		void change_margins();
 		void runAutoMark();
 		void openDocument();
 		void exportLatex();
@@ -61,7 +61,7 @@ class MainDialog : public QMainWindow, private Ui::MainWindow
 		QComboBox *m_cbZoom;
 		QComboBox *m_cbPage;
 		std::vector<double> m_scaleFactors;
-		std::unique_ptr<DocumentSettings> m_settings;
+		std::shared_ptr<DocumentSettings> m_settings;
 		std::shared_ptr<SummarizeDocument> m_sdoc;
 		std::unique_ptr<PrerenderThread> m_renderthread;
 		AutoMarkThread* m_automarkthread;

@@ -5,11 +5,7 @@
 
 #include "documentsettings.h"
 
-#include <QSize>
-#include <QRectF>
 #include <QImage>
-
-#include "documentpage.h"
 
 typedef image_array::index_range range;
 
@@ -189,7 +185,7 @@ document_units::rect<document_units::pixel> descale_and_transform(rect rt, doubl
 	return document_units::rect<pixel>(coord, sz);
 }
 
-std::vector<document_units::rect<document_units::centimeter>> postprocess_results(const std::vector<rect>& old_res, const DocumentSettings& settings, bool ignore_width, double rendered_scale, DocumentPage* page)
+std::vector<document_units::rect<document_units::centimeter>> postprocess_results(const std::vector<rect>& old_res, const DocumentSettings& settings, bool ignore_width, double rendered_scale, document_units::size<document_units::centimeter> pageSize)
 {
 	const document_units::centimeter margin(0.05);
 	std::vector<document_units::rect<document_units::centimeter>> result;
@@ -198,11 +194,11 @@ std::vector<document_units::rect<document_units::centimeter>> postprocess_result
 		auto rtst = descale_and_transform(rt, rendered_scale);
 
 		auto rect_with_borders = add_page_margins(settings.margins(), settings.resolution().to<document_units::centimeter>(rtst));
-		auto result_rect = rect_with_borders.bounded_grow(margin, settings.active_area(page->pageSize()));
+		auto result_rect = rect_with_borders.bounded_grow(margin, settings.active_area(pageSize));
 
 		if(ignore_width)
 		{
-			auto pagearea = settings.active_area(page->pageSize());
+			auto pagearea = settings.active_area(pageSize);
 			result_rect._coordinate.x = pagearea._coordinate.x;
 			result_rect._size.width = pagearea._size.width;
 		}
@@ -213,7 +209,7 @@ std::vector<document_units::rect<document_units::centimeter>> postprocess_result
 	return result;
 }
 
-std::vector<document_units::rect<document_units::centimeter>> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, document_units::centimeter heightThreshold, bool ignore_width, bool boundingBox, double rendered_scale, DocumentPage* page)
+std::vector<document_units::rect<document_units::centimeter>> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, document_units::centimeter heightThreshold, bool ignore_width, bool boundingBox, double rendered_scale, document_units::size<document_units::centimeter> pageSize)
 {
 	document_units::margins<document_units::pixel> margins = settings.resolution().to<document_units::pixel>(settings.margins());
 	//prepare image
@@ -240,6 +236,6 @@ std::vector<document_units::rect<document_units::centimeter>> autoMarkCombinedIn
 
 	std::vector<rect> old_res = automark_scan(bimage, threshold, lineThreshold, boundingBox);
 
-	return postprocess_results(old_res, settings, ignore_width, rendered_scale, page);
+	return postprocess_results(old_res, settings, ignore_width, rendered_scale, pageSize);
 }
 

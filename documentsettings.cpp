@@ -18,95 +18,25 @@
  ***************************************************************************/
 #include "documentsettings.h"
 
-#include "pdfview.h"
-
-const double inch_factor = 2.54;
-
-DocumentSettings::DocumentSettings(document_units::dpi dpiX, document_units::dpi dpiY, QObject *parent)
- : QObject(parent),
+DocumentSettings::DocumentSettings(document_units::dpi dpiX, document_units::dpi dpiY)
+ : QObject(),
    _margins(document_units::centimeter(0.0), document_units::centimeter(0.0), document_units::centimeter(0.0), document_units::centimeter(0.0)),
    _dpi(dpiX, dpiY)
 {
-	m_bAutoWidth = false;
-	m_view = nullptr;
+	_autoWidth = false;
 }
 
-PdfView* DocumentSettings::view() const
+document_units::rect<document_units::centimeter> DocumentSettings::active_area(document_units::size<document_units::centimeter> sz) const
 {
-	return m_view;
-}
-
-void DocumentSettings::registerView(PdfView *view)
-{
-	m_view = view;
-}
-
-document_units::rect<document_units::centimeter> DocumentSettings::active_area(document_units::size<document_units::centimeter> sz) const {
 	document_units::size<document_units::centimeter> active_size(sz.width - _margins.left - _margins.right, sz.height - _margins.top - _margins.bottom);
 	document_units::coordinate<document_units::centimeter> active_coord(_margins.left, _margins.top);
 	return document_units::rect<document_units::centimeter>(active_coord, active_size);
 }
 
-void DocumentSettings::setAutoWidth(bool autowidth, document_units::centimeter leftMargin, document_units::centimeter rightMargin)
+void DocumentSettings::set_margins(bool autowidth, document_units::margins<document_units::centimeter> margins)
 {
-	_margins.left = leftMargin;
-	_margins.right = rightMargin;
-	m_bAutoWidth = autowidth;
+	_margins = margins;
+	_autoWidth = autowidth;
 	emit marginsChanged();
 }
-
-void DocumentSettings::setTopMargin(document_units::centimeter topMargin)
-{
-	_margins.top = topMargin;
-	emit marginsChanged();
-}
-
-void DocumentSettings::setBottomMargin(document_units::centimeter bottomMargin)
-{
-	_margins.bottom = bottomMargin;
-	emit marginsChanged();
-}
-
-bool DocumentSettings::autoWidth() const
-{
-	return m_bAutoWidth;
-}
-
-double DocumentSettings::leftMargin(Unit unit) const
-{
-	if(unit == Unit::cm)
-		return _margins.left.value;
-	else
-		return _dpi.x_to<document_units::pixel>(_margins.left).value;
-}
-
-double DocumentSettings::rightMargin(Unit unit) const
-{
-	if(unit == Unit::cm)
-		return _margins.right.value;
-	else
-		return _dpi.x_to<document_units::pixel>(_margins.right).value;
-}
-
-double DocumentSettings::topMargin(Unit unit) const
-{
-	if(unit == Unit::cm)
-		return _margins.top.value;
-	else
-		return _dpi.y_to<document_units::pixel>(_margins.top).value;
-}
-
-double DocumentSettings::bottomMargin(Unit unit) const
-{
-	if(unit == Unit::cm)
-		return _margins.bottom.value;
-	else
-		return _dpi.y_to<document_units::pixel>(_margins.bottom).value;
-}
-
-
-DocumentSettings::~DocumentSettings()
-{
-}
-
 

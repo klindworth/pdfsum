@@ -22,6 +22,8 @@
 
 #include <QFileInfo>
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QCloseEvent>
 #include "summarizedocument.h"
 #include "pdfmarker.h"
 #include "documentpage.h"
@@ -175,9 +177,17 @@ void LatexExportDialog::openFileDialog()
 		lePath->setText("");
 }
 
-LatexExportDialog::~LatexExportDialog()
+void LatexExportDialog::closeEvent(QCloseEvent *event)
 {
-	if(m_latexrunner)
-		delete m_latexrunner;
+	if(m_latexrunner->isRunning())
+	{
+		QMessageBox::StandardButton result = QMessageBox::warning(this, tr("Not finished"), "Processing hasn't finshed. Abort and force to quit?", QMessageBox::Yes | QMessageBox::No);
+		if(result == QMessageBox::No)
+		{
+			event->ignore();
+			return;
+		}
+	}
+	event->accept();
 }
 
