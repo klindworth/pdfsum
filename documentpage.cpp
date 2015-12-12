@@ -26,19 +26,18 @@
 #include <QGraphicsScene>
 #include <QMutexLocker>
 #include <QtAlgorithms>
+#include <QApplication>
 
 #include <algorithm>
 
 #include "automarker.h"
 
+#include <poppler-qt5.h>
+
 DocumentPage::DocumentPage(SummarizeDocument *sdoc, int pagenumber) :
-	_pageSize(document_units::centimeter(0), document_units::centimeter(0)),
-	_resolution(document_units::dpi(72), document_units::dpi(72)),
-	m_iPageNumber(pagenumber),
+	_pageNumber(pagenumber),
 	m_sdoc(sdoc)
 {
-	m_scene = nullptr;
-	m_dRenderedScale = 1.0;
 }
 
 SummarizeDocument* DocumentPage::document()
@@ -48,15 +47,13 @@ SummarizeDocument* DocumentPage::document()
 
 int DocumentPage::number() const
 {
-	return m_iPageNumber;
+	return _pageNumber;
 }
 
 document_units::size<document_units::centimeter> DocumentPage::pageSize() const
 {
-	if(m_renderedPage)
-	{
-		return _pageSize;
-	}
+	if(_renderedPage)
+		return _renderedPage->size;
 	else
 		throw std::runtime_error("no rendered page");
 }
@@ -65,57 +62,59 @@ void DocumentPage::addMarker(PdfMarker* marker)
 {
 	QMutexLocker locker(&m_markermutex);
 
-	if(graphicsScene())
-		m_scene->addItem(marker->createViewItem(_resolution));
-	else
-		qWarning("no scene");
+	if(_renderedPage)
+		_renderedPage->scene->addItem(marker->createViewItem(_renderedPage->resolution));
 
 	//insert the marker at the right position in the list. the list is ordered by position y
 	auto it = std::lower_bound(_markers.begin(), _markers.end(), marker, [](const PdfMarker* lhs, const PdfMarker* rhs){return lhs->rect()._coordinate.y < rhs->rect()._coordinate.y;});
 	_markers.insert(it, marker);
 }
 
-void DocumentPage::setGraphicsScene(QGraphicsScene *scene)
-{
-	QMutexLocker locker(&m_mutex);
-	m_scene = scene;
-}
-
 QGraphicsScene* DocumentPage::graphicsScene()
 {
-	if(!m_scene)
+	assert(_renderedPage);
+
+	return _renderedPage->scene;
+}
+
+rendered_page::rendered_page(QImage pimage, document_units::resolution_setting presolution, double pscale, DocumentPage* ppage) :
+	image(pimage),
+	size(presolution.to<document_units::centimeter>(document_units::size<document_units::pixel>(document_units::pixel(pimage.width() / pscale), document_units::pixel(pimage.height() / pscale)))),
+	resolution(presolution), scene(new QGraphicsScene()), scale(pscale), page(ppage)
+{
+	scene->setSceneRect(0, 0, image.rect().width()/scale, image.rect().height()/scale);
+	scene->moveToThread(QApplication::instance()->thread());
+}
+
+rendered_page::~rendered_page()
+{
+	delete scene;
+}
+
+std::shared_ptr<rendered_page> DocumentPage::rerender_page(document_units::resolution_setting settings, double scale)
+{
+	QMutexLocker locker(&m_markermutex);
+	Poppler::Page *page = m_sdoc->pdfDocument()->page(_pageNumber);
+	std::shared_ptr<rendered_page> result = std::make_shared<rendered_page>(page->renderToImage(scale * settings.x.value, scale * settings.y.value), settings, scale, this);
+	delete page;
+
+	for(PdfMarker *marker : _markers)
 	{
-		m_scene = new QGraphicsScene();
-		if(m_renderedPage)
-			m_scene->setSceneRect(0, 0, m_renderedPage->rect().width()/m_dRenderedScale, m_renderedPage->rect().height()/m_dRenderedScale);
+		result->scene->addItem(marker->createViewItem(settings));
 	}
-	return m_scene;
+
+	return result;
 }
 
-std::shared_ptr<QImage> DocumentPage::renderPage(document_units::resolution_setting settings, double scale)
+std::shared_ptr<rendered_page> DocumentPage::render_page(document_units::resolution_setting settings, double scale)
 {
-	//QMutexLocker locker(&m_mutex);
-	if(m_renderedPage && m_dRenderedScale == scale)
-		return m_renderedPage;
+	if(_renderedPage && _renderedPage->scale == scale)
+		return _renderedPage;
 	else
-		return rerenderPage(settings, scale);
-}
-
-std::shared_ptr<QImage> DocumentPage::rerenderPage(document_units::resolution_setting settings, double scale)
-{
-	m_renderedPage = document()->renderedPage(m_iPageNumber, scale, settings);
-	m_dRenderedScale = scale;
-
-	using namespace document_units;
-
-	pixel width(m_renderedPage->width() / m_dRenderedScale);
-	pixel height(m_renderedPage->height() / m_dRenderedScale);
-	size<pixel> pixelsize(width, height);
-
-	_pageSize = settings.to<centimeter>(pixelsize);
-	_resolution = settings;
-
-	return m_renderedPage;
+	{
+		_renderedPage = rerender_page(settings, scale);
+		return _renderedPage;
+	}
 }
 
 void DocumentPage::removeMarker(PdfMarkerItem *marker)
@@ -135,12 +134,15 @@ void DocumentPage::removeMarker(PdfMarker* marker)
 
 void DocumentPage::removeCorrespondingViewMarker(PdfMarker* marker)
 {
-	for(QGraphicsItem *current_item : graphicsScene()->items())
+	if(_renderedPage)
 	{
-		PdfMarkerItem* converted_item = qgraphicsitem_cast<PdfMarkerItem*>(current_item);
-		if(converted_item && marker == converted_item->marker())
+		for(QGraphicsItem *current_item : graphicsScene()->items())
 		{
-			graphicsScene()->removeItem(current_item);
+			PdfMarkerItem* converted_item = qgraphicsitem_cast<PdfMarkerItem*>(current_item);
+			if(converted_item && marker == converted_item->marker())
+			{
+				graphicsScene()->removeItem(current_item);
+			}
 		}
 	}
 }
@@ -165,12 +167,13 @@ void DocumentPage::removeAllMarkers(bool onlyAutomatic)
 
 void DocumentPage::autoMarkCombined(const DocumentSettings& settings, uint threshold, document_units::centimeter heightThreshold, bool determineVert, bool boundingBox)
 {
-	if(!m_renderedPage)
-		renderPage(settings.resolution(), 1.0);
-	
-	if(m_renderedPage)
+	if(!_renderedPage)
+		_renderedPage = render_page(settings.resolution(), 1.0);
+
+
+	if(_renderedPage)
 	{
-		std::vector<document_units::rect<document_units::centimeter>> res = autoMarkCombinedInternal(*m_renderedPage, settings, threshold, heightThreshold, !determineVert, boundingBox, m_dRenderedScale, this);
+		std::vector<document_units::rect<document_units::centimeter>> res = autoMarkCombinedInternal(_renderedPage->image, settings, threshold, heightThreshold, !determineVert, boundingBox, _renderedPage->scale, this);
 		for(auto rt : res)
 		{
 			PdfMarker *marker = new PdfMarker(this, rt);
@@ -195,7 +198,5 @@ const std::vector<PdfMarker*>& DocumentPage::markers() const
 
 DocumentPage::~DocumentPage()
 {
-	if(m_scene)
-		delete m_scene;
 }
 

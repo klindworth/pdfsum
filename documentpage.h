@@ -26,6 +26,7 @@
 #include <cassert>
 
 #include "document_units.h"
+#include <boost/optional.hpp>
 
 class PdfMarker;
 class PdfMarkerItem;
@@ -33,10 +34,20 @@ class DocumentSettings;
 class SummarizeDocument;
 class QGraphicsScene;
 
-struct rendered_page {
-	QImage image;
-	document_units::size<document_units::centimeter> size;
-	double scale;
+class DocumentPage;
+
+struct rendered_page
+{
+	rendered_page(QImage pimage, document_units::resolution_setting presolution, double pscale, DocumentPage* ppage);
+	~rendered_page();
+	rendered_page(const rendered_page&) = delete;
+	const QImage image;
+	const document_units::size<document_units::centimeter> size;
+	const document_units::resolution_setting resolution;
+	QGraphicsScene *scene;
+	const double scale;
+
+	DocumentPage* page;
 };
 
 /**
@@ -48,7 +59,8 @@ class DocumentPage
 		DocumentPage(SummarizeDocument *sdoc, int pagenumber);
 		~DocumentPage();
 		void addMarker(PdfMarker* marker);
-		std::shared_ptr<QImage> renderPage(document_units::resolution_setting settings, double scale);
+		std::shared_ptr<rendered_page> render_page(document_units::resolution_setting settings, double scale);
+		std::shared_ptr<rendered_page> rerender_page(document_units::resolution_setting settings, double scale);
 		
 		void setGraphicsScene(QGraphicsScene *scene);
 		QGraphicsScene* graphicsScene();
@@ -64,18 +76,11 @@ class DocumentPage
 
 	public slots:
 		void autoMarkCombined(const DocumentSettings& settings, uint threshold, document_units::centimeter HeightThreshold, bool determineVert, bool boundingBox);
-		
-	protected:
-		std::shared_ptr<QImage> rerenderPage(document_units::resolution_setting settings, double scale);
 
 	private:
-		std::shared_ptr<QImage> m_renderedPage;
-		document_units::size<document_units::centimeter> _pageSize;
-		document_units::resolution_setting _resolution;
+		std::shared_ptr<rendered_page> _renderedPage;
 		std::vector<PdfMarker*> _markers;
-		double m_dRenderedScale;
-		const int m_iPageNumber;
-		QGraphicsScene *m_scene;
+		const int _pageNumber;
 		SummarizeDocument* m_sdoc;
 
 		QMutex m_mutex;

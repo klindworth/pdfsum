@@ -92,8 +92,8 @@ void PdfView::setZoom(double dZoom)
 		double scaleChange = dZoom/m_dScale;
 		m_dScale = dZoom;
 		//rerenderPage();
-		m_renderedPage = m_page->renderPage(m_settings->resolution(), m_dScale);
-		m_renderedPixmap = std::make_shared<QPixmap>(QPixmap::fromImage(*m_renderedPage));
+		_renderedPage = m_page->render_page(m_settings->resolution(), m_dScale);
+		m_renderedPixmap = std::make_shared<QPixmap>(QPixmap::fromImage(_renderedPage->image));
 		scale(scaleChange, scaleChange);
 	}
 	
@@ -102,24 +102,21 @@ void PdfView::setZoom(double dZoom)
 /**
 * Sets (another) page of the current document. The function handles all necessary steps like rendering
 * the new page and updating the background. No further steps necessaray after calling this function
-* @param iPage Number of the page, which should be rendered. Important: Counting starts with 0.
 */
 void PdfView::setPage(DocumentPage* page)
 {
 	if(page)
 	{
 		m_page = page;
+		_renderedPage = m_page->render_page(m_settings->resolution(), m_dScale);
+
+		assert(m_page->graphicsScene()->thread() == thread());
 		setScene(m_page->graphicsScene());
 		connect(m_page->graphicsScene(), &QGraphicsScene::selectionChanged, [&]() {
 			emit selectionChanged(selection());
 		} );
 
-		//rerenderPage();
-		m_renderedPage = m_page->renderPage(m_settings->resolution(), m_dScale);
-		if(scene()->sceneRect().size().isEmpty())
-			scene()->setSceneRect(0, 0, m_renderedPage->rect().width()/m_dScale, m_renderedPage->rect().height()/m_dScale);
-
-		m_renderedPixmap = std::make_shared<QPixmap>(QPixmap::fromImage(*m_renderedPage));
+		m_renderedPixmap = std::make_shared<QPixmap>(QPixmap::fromImage(_renderedPage->image));
 
 		scene()->update();
 		emit selectionChanged(selection());
@@ -147,7 +144,7 @@ QList<PdfMarkerItem*> PdfView::selection() const
 void PdfView::clear()
 {
 	m_page = nullptr;
-	m_renderedPage.reset();
+	_renderedPage.reset();
 	m_renderedPixmap.reset();
 }
 

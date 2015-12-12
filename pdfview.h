@@ -35,6 +35,7 @@ class DocumentSettings;
 class DocumentPage;
 class SummarizeDocument;
 class DocumentMarkerGui;
+class rendered_page;
 
 namespace document_units { struct centimeter; }
 
@@ -69,8 +70,8 @@ class PdfView : public QGraphicsView
 		QPoint m_dragPosition;
 		//for creating new markers a rubberband is shown
 		std::unique_ptr<QRubberBand> m_rubberBand;
-		//Stores a pointer to the rendered page. This class isn't the owner of the object. It's managed by the DocumentPage class
-		std::shared_ptr<QImage> m_renderedPage;
+		//Stores a pointer to the rendered page.
+		std::shared_ptr<rendered_page> _renderedPage;
 		//Stores a pointer to the pixmap of the rendered page. This class owns the object, so delete it, when a object isn't needed furthermore.
 		std::shared_ptr<QPixmap> m_renderedPixmap;
 		//current zoomfactor

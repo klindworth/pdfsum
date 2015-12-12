@@ -20,6 +20,7 @@
 
 #include<QCoreApplication>
 #include<QDir>
+//include <QTextStream>
 
 LatexRunner::LatexRunner(const QString& input, const QString& wd, const QString& dest, QObject *parent)
  : QObject(parent)
@@ -28,6 +29,12 @@ LatexRunner::LatexRunner(const QString& input, const QString& wd, const QString&
 	m_proc = new QProcess(this);
 	m_tmppath.setPath(QDir::tempPath());
 	qDebug(m_tmppath.absolutePath().toLatin1());
+
+	/*QFile tempfile(m_tmppath.absoluteFilePath("test.text"));
+	tempfile.open(QFile::WriteOnly | QFile::Truncate);
+	QTextStream stream(&tempfile);
+	stream << input;
+	tempfile.close();*/
 	
 	//connect(m_proc, SIGNAL(finished( int, QProcess::ExitStatus )), this, SLOT(latexFinished(int, QProcess::ExitStatus)));
 	//connect(m_proc, SIGNAL(error( QProcess::ProcessError )), this, SLOT(latexError(QProcess::ProcessError)));
@@ -85,6 +92,7 @@ void LatexRunner::latexError(QProcess::ProcessError err)
 
 LatexRunner::~LatexRunner()
 {
+	m_proc->terminate();
 	//delete m_proc;
 }
 
