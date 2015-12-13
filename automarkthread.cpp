@@ -22,7 +22,7 @@
 #include "documentpage.h"
 #include "documentsettings.h"
 
-AutoMarkThread::AutoMarkThread(const std::shared_ptr<SummarizeDocument>& doc, const DocumentSettings *settings, bool boundingBox) : QThread(), m_sdoc(doc), m_settings(settings), m_boundingBox(boundingBox)
+AutoMarkThread::AutoMarkThread(const std::shared_ptr<SummarizeDocument>& doc, automark_settings settings) : QThread(), m_sdoc(doc), _settings(settings)
 {
 
 }
@@ -34,8 +34,9 @@ void AutoMarkThread::run()
 	for(int i = 0; i < count; ++i)
 	{
 		//TODO: check, if 1.0 is a possible source of bugs, if page breaks are used
-		m_sdoc->page(i)->render_page(m_settings->resolution(), 1.0);
-		emit readyForAutoMark(m_sdoc->page(i), m_boundingBox);
+		m_sdoc->page(i)->render_page(_settings.resolution, 1.0);
+		m_sdoc->page(i)->automark_combined(_settings);
+		emit finished_page(m_sdoc->page(i));
 		emit progressChanged((i+1)*100/count);
 	}
 }

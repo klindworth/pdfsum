@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <boost/multi_array.hpp>
 
-#include "documentsettings.h"
-
 #include <QImage>
 
 typedef image_array::index_range range;
@@ -103,7 +101,7 @@ std::vector<rect> automark_scan(const image_array& bimage, unsigned int threshol
 			}
 		}
 
-		if(firstTaintedRow != -1 && firstTaintedRow < pageHeight - lineThreshold)
+		if(firstTaintedRow != -1 && (unsigned int)firstTaintedRow < pageHeight - lineThreshold)
 			add_marker(firstTaintedRow, pageHeight-1, firstTaintedColumn, lastTaintedColumn);
 	}
 	else
@@ -185,7 +183,7 @@ document_units::rect<document_units::pixel> descale_and_transform(rect rt, doubl
 	return document_units::rect<pixel>(coord, sz);
 }
 
-std::vector<document_units::rect<document_units::centimeter>> postprocess_results(const std::vector<rect>& old_res, const DocumentSettings& settings, bool ignore_width, double rendered_scale, document_units::size<document_units::centimeter> pageSize)
+std::vector<document_units::rect<document_units::centimeter>> postprocess_results(const std::vector<rect>& old_res, automark_settings& settings, double rendered_scale, document_units::size<document_units::centimeter> pageSize)
 {
 	const document_units::centimeter margin(0.05);
 	std::vector<document_units::rect<document_units::centimeter>> result;
@@ -193,12 +191,12 @@ std::vector<document_units::rect<document_units::centimeter>> postprocess_result
 	{
 		auto rtst = descale_and_transform(rt, rendered_scale);
 
-		auto rect_with_borders = add_page_margins(settings.margins(), settings.resolution().to<document_units::centimeter>(rtst));
-		auto result_rect = rect_with_borders.bounded_grow(margin, settings.active_area(pageSize));
+		auto rect_with_borders = add_page_margins(settings.margins, settings.resolution.to<document_units::centimeter>(rtst));
+		auto result_rect = rect_with_borders.bounded_grow(margin, settings.margins.active_area(pageSize));
 
-		if(ignore_width)
+		if(settings.full_width_marker)
 		{
-			auto pagearea = settings.active_area(pageSize);
+			auto pagearea = settings.margins.active_area(pageSize);
 			result_rect._coordinate.x = pagearea._coordinate.x;
 			result_rect._size.width = pagearea._size.width;
 		}
@@ -209,9 +207,9 @@ std::vector<document_units::rect<document_units::centimeter>> postprocess_result
 	return result;
 }
 
-std::vector<document_units::rect<document_units::centimeter>> autoMarkCombinedInternal(const QImage& qimage, const DocumentSettings& settings, unsigned int threshold, document_units::centimeter heightThreshold, bool ignore_width, bool boundingBox, double rendered_scale, document_units::size<document_units::centimeter> pageSize)
+std::vector<document_units::rect<document_units::centimeter>> autoMarkCombinedInternal(const QImage& qimage, automark_settings settings, double rendered_scale, document_units::size<document_units::centimeter> pageSize)
 {
-	document_units::margins<document_units::pixel> margins = settings.resolution().to<document_units::pixel>(settings.margins());
+	document_units::margins<document_units::pixel> margins = settings.resolution.to<document_units::pixel>(settings.margins);
 	//prepare image
 	const unsigned int lastPixel = qimage.width()  - margins.right.value * rendered_scale;
 	const unsigned int lastLine  = qimage.height() - margins.bottom.value * rendered_scale;
@@ -232,10 +230,10 @@ std::vector<document_units::rect<document_units::centimeter>> autoMarkCombinedIn
 	assert(lineLength == bimage.shape()[1]);
 
 	//the scanning
-	const unsigned int lineThreshold = settings.resolution().y_to<document_units::pixel>(heightThreshold).value*rendered_scale;
+	const unsigned int lineThreshold = settings.resolution.y_to<document_units::pixel>(settings.height_threshold).value*rendered_scale;
 
-	std::vector<rect> old_res = automark_scan(bimage, threshold, lineThreshold, boundingBox);
+	std::vector<rect> old_res = automark_scan(bimage, settings.grey_threshold, lineThreshold, settings.bounding_box);
 
-	return postprocess_results(old_res, settings, ignore_width, rendered_scale, pageSize);
+	return postprocess_results(old_res, settings, rendered_scale, pageSize);
 }
 

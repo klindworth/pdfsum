@@ -69,7 +69,7 @@ class PdfView : public QGraphicsView
 		std::unique_ptr<QRubberBand> m_rubberBand;
 		//Stores a pointer to the rendered page.
 		std::shared_ptr<rendered_page> _renderedPage;
-		//Stores a pointer to the pixmap of the rendered page. This class owns the object, so delete it, when a object isn't needed furthermore.
+		//Stores a pointer to the pixmap of the rendered page.
 		std::shared_ptr<QPixmap> m_renderedPixmap;
 		//current zoomfactor
 		double m_dScale;

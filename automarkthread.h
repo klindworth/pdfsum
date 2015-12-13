@@ -22,9 +22,9 @@
 #include <QThread>
 #include <memory>
 
+#include "automarker.h"
+
 class SummarizeDocument;
-class DocumentSettings;
-class DocumentMarkerGui;
 class DocumentPage;
 
 /**
@@ -34,18 +34,17 @@ class AutoMarkThread : public QThread
 {
 	Q_OBJECT
 	public:
-		AutoMarkThread(const std::shared_ptr<SummarizeDocument> &doc, const DocumentSettings *settings, bool boundingBox);
+		AutoMarkThread(const std::shared_ptr<SummarizeDocument> &doc, automark_settings settings);
 		~AutoMarkThread();
 		
 	protected:
 		std::shared_ptr<SummarizeDocument> m_sdoc;
-		const DocumentSettings *m_settings;
-		bool m_boundingBox;
+		automark_settings _settings;
 		void run();
 		
 	signals:
 		void progressChanged(int);
-		void readyForAutoMark(DocumentPage *page, bool boundingBox);
+		void finished_page(DocumentPage *page);
 
 };
 

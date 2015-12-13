@@ -220,7 +220,7 @@ void PdfView::mouseReleaseEvent(QMouseEvent *event)
 		//if the 'auto width' setting is active, overwrite the position and width of the marked area
 		if(_settings->autoWidth())
 		{
-			auto pagearea = _settings->active_area(m_page->pageSize());
+			auto pagearea = _settings->margins().active_area(m_page->pageSize());
 			crect._coordinate.x = pagearea._coordinate.x;
 			crect._size.width = pagearea._size.width;
 		}

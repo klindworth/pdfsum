@@ -22,7 +22,6 @@
 
 #include <QFileDialog>
 
-#include "documentsettings.h"
 #include "documentpage.h"
 #include "summarizedocument.h"
 #include "pdfmarker.h"
@@ -91,14 +90,18 @@ void AutoCut::errorMessageReceived(QString msg)
 
 void AutoCut::cutFile(QDir dirSource, QDir dirTarget, QString fileName)
 {
-	_docsettings = std::make_unique<DocumentSettings>(document_units::dpi(physicalDpiX()), document_units::dpi(physicalDpiY()));
 	//qDebug(path);
 	std::shared_ptr<SummarizeDocument> doc = SummarizeDocument::loadGui(dirSource.filePath(fileName), this);
 	if(doc->pageCount() > 0)
 	{
 		DocumentPage *page = doc->page(0);
-		page->autoMarkCombined(*_docsettings, 250, document_units::centimeter(0.0), true, true);
-		//page->autoBoundingBox(settings, 250);
+
+		document_units::resolution_setting resolution{document_units::dpi(physicalDpiX()), document_units::dpi(physicalDpiY())};
+		document_units::margins<document_units::centimeter> margins(document_units::centimeter(0.0), document_units::centimeter(0.0), document_units::centimeter(0.0), document_units::centimeter(0.0));
+
+		automark_settings settings(resolution, margins, document_units::centimeter(0.0), 250, true, false);
+		page->automark_combined(settings);
+
 		const std::vector<PdfMarker*>& markers = page->markers();
 		if(markers.size() > 0)
 		{

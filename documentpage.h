@@ -26,7 +26,7 @@
 #include <cassert>
 
 #include "document_units.h"
-#include <boost/optional.hpp>
+#include "automarker.h"
 
 class PdfMarker;
 class PdfMarkerItem;
@@ -58,7 +58,7 @@ class DocumentPage
 	public:
 		DocumentPage(SummarizeDocument *sdoc, int pagenumber);
 		~DocumentPage();
-		void addMarker(PdfMarker* marker);
+		void addMarker(PdfMarker* marker, bool no_item_creation = false);
 		std::shared_ptr<rendered_page> render_page(document_units::resolution_setting settings, double scale);
 		std::shared_ptr<rendered_page> rerender_page(document_units::resolution_setting settings, double scale);
 		
@@ -73,9 +73,10 @@ class DocumentPage
 		SummarizeDocument* document();
 		document_units::size<document_units::centimeter> pageSize() const;
 		const std::vector<PdfMarker*>& markers() const;
+		void create_items();
 
 	public slots:
-		void autoMarkCombined(const DocumentSettings& settings, uint threshold, document_units::centimeter HeightThreshold, bool determineVert, bool boundingBox);
+		void automark_combined(automark_settings settings);
 
 	private:
 		std::shared_ptr<rendered_page> _renderedPage;

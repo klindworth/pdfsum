@@ -42,7 +42,7 @@ class PrerenderThread : public QThread
 		void setViewingPage(int number);
 		
 	protected:
-		std:shared_ptr<DocumentSettings> m_settings;
+		std::shared_ptr<DocumentSettings> m_settings;
 		std::shared_ptr<SummarizeDocument> m_sdoc;
 		void run();
 		int m_currentPage, m_pagecount;

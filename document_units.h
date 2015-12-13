@@ -139,6 +139,12 @@ namespace document_units
 	template<typename T>
 	struct margins {
 		margins(T ptop, T pleft, T pbottom, T pright) : top(ptop), left(pleft), bottom(pbottom), right(pright) {}
+		rect<T> active_area(size<T> sz) const
+		{
+			size<T> active_size(sz.width - left - right, sz.height - top - bottom);
+			coordinate<T> active_coord(left, top);
+			return rect<T>(active_coord, active_size);
+		}
 
 		T top, left, bottom, right;
 	};

@@ -166,6 +166,8 @@ void MainDialog::runAutoMark()
 {
 	bool removeAutomaticMarker = cbRemoveAutomatic->isChecked();
 
+	automark_settings settings(documentSettings()->resolution(), documentSettings()->margins(), document_units::centimeter(dspHeightThreshold->value()/10.0), spGreyThreshold->value(), cbCompletePageWidth->isChecked(), cbBoundingBox->isChecked());
+
 	pbAutoMark->setEnabled(false);
 	if(m_renderthread)
 		m_renderthread->pause();
@@ -179,8 +181,8 @@ void MainDialog::runAutoMark()
 		m_pbAutoProgressBar->setEnabled(true);
 		m_pbAutoProgressBar->setValue(0);
 
-		m_automarkthread = new AutoMarkThread(m_sdoc, documentSettings(), cbBoundingBox->isChecked());
-		connect(m_automarkthread, SIGNAL(readyForAutoMark(DocumentPage*, bool)), this, SLOT(autoMarkPage(DocumentPage*, bool)), Qt::QueuedConnection);
+		m_automarkthread = new AutoMarkThread(m_sdoc, settings);
+		connect(m_automarkthread, &AutoMarkThread::finished_page, this, &MainDialog::page_marked, Qt::QueuedConnection);
 		connect(m_automarkthread, SIGNAL(progressChanged(int)), m_pbAutoProgressBar, SLOT(setValue(int)), Qt::QueuedConnection);
 		connect(m_automarkthread, SIGNAL(finished()), this, SLOT(autoMarkFinished()), Qt::QueuedConnection);
 		m_automarkthread->start();
@@ -190,14 +192,15 @@ void MainDialog::runAutoMark()
 	{
 		if(removeAutomaticMarker)
 			m_view->page()->removeAllMarkers(true);
-		m_view->page()->autoMarkCombined(*(documentSettings()), spGreyThreshold->value(), document_units::centimeter(dspHeightThreshold->value()/10.0), !cbCompletePageWidth->isChecked(), cbBoundingBox->isChecked());
+		m_view->page()->automark_combined(settings);
+		m_view->page()->create_items();
 		autoMarkFinished();
 	}
 }
 
-void MainDialog::autoMarkPage(DocumentPage *page, bool boundingBox)
+void MainDialog::page_marked(DocumentPage *page)
 {
-	page->autoMarkCombined(*(documentSettings()), spGreyThreshold->value(), document_units::centimeter(dspHeightThreshold->value()/10.0), !cbCompletePageWidth->isChecked(), boundingBox);
+	page->create_items();
 	
 	if(page == m_view->page())
 		m_view->scene()->update();
@@ -229,7 +232,7 @@ void MainDialog::loadDocument(QString fileName)
 	m_view->setPage(m_sdoc->page(0));
 	refreshNavigationButtons();
 	
-	m_renderthread = std::make_unique<PrerenderThread>(documentSettings(), m_sdoc);
+	m_renderthread = std::make_unique<PrerenderThread>(m_settings, m_sdoc);
 	m_renderthread->start();
 }
 

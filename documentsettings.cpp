@@ -26,13 +26,6 @@ DocumentSettings::DocumentSettings(document_units::dpi dpiX, document_units::dpi
 	_autoWidth = false;
 }
 
-document_units::rect<document_units::centimeter> DocumentSettings::active_area(document_units::size<document_units::centimeter> sz) const
-{
-	document_units::size<document_units::centimeter> active_size(sz.width - _margins.left - _margins.right, sz.height - _margins.top - _margins.bottom);
-	document_units::coordinate<document_units::centimeter> active_coord(_margins.left, _margins.top);
-	return document_units::rect<document_units::centimeter>(active_coord, active_size);
-}
-
 void DocumentSettings::set_margins(bool autowidth, document_units::margins<document_units::centimeter> margins)
 {
 	_margins = margins;

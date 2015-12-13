@@ -54,7 +54,7 @@ class MainDialog : public QMainWindow, private Ui::MainWindow
 		
 	protected slots:
 		void autoMarkFinished();
-		void autoMarkPage(DocumentPage *page, bool boundingBox);
+		void page_marked(DocumentPage *page);
 		void openAutocut();
 
 	private:

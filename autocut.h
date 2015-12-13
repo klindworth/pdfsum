@@ -41,7 +41,6 @@ public:
 
 protected:
 	std::unique_ptr<LatexRunner> m_currentRunner;
-	std::unique_ptr<DocumentSettings> _docsettings;
 	QQueue<QString> m_jobQueue;
 
 protected slots:

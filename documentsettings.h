@@ -35,8 +35,6 @@ class DocumentSettings : public QObject
 			return _dpi;
 		}
 
-		document_units::rect<document_units::centimeter> active_area(document_units::size<document_units::centimeter> sz) const;
-
 		bool autoWidth() const {
 			return _autoWidth;
 		}

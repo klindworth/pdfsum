@@ -58,16 +58,61 @@ document_units::size<document_units::centimeter> DocumentPage::pageSize() const
 		throw std::runtime_error("no rendered page");
 }
 
-void DocumentPage::addMarker(PdfMarker* marker)
+void DocumentPage::addMarker(PdfMarker* marker, bool no_item_creation)
 {
 	QMutexLocker locker(&m_markermutex);
 
-	if(_renderedPage)
+	if(_renderedPage && !no_item_creation)
 		_renderedPage->scene->addItem(marker->createViewItem(_renderedPage->resolution));
 
 	//insert the marker at the right position in the list. the list is ordered by position y
 	auto it = std::lower_bound(_markers.begin(), _markers.end(), marker, [](const PdfMarker* lhs, const PdfMarker* rhs){return lhs->rect()._coordinate.y < rhs->rect()._coordinate.y;});
 	_markers.insert(it, marker);
+}
+
+std::vector<PdfMarkerItem*> convert_to_item_vector(QList<QGraphicsItem*> items)
+{
+	std::vector<PdfMarkerItem*> result;
+	result.reserve(items.size());
+	for(QGraphicsItem *current_item : items)
+	{
+		PdfMarkerItem* converted_item = qgraphicsitem_cast<PdfMarkerItem*>(current_item);
+		if(converted_item)
+			result.push_back(converted_item);
+	}
+	return result;
+}
+
+std::vector<PdfMarker*> convert_to_marker_vector(std::vector<PdfMarkerItem*> items)
+{
+	std::vector<PdfMarker*> result;
+	std::transform(items.begin(), items.end(), std::back_inserter(result), [](PdfMarkerItem *item) {
+		return item->marker();
+	});
+	return result;
+}
+
+std::vector<PdfMarker*> markers_without_item(std::vector<PdfMarker*> src, QGraphicsScene* scene)
+{
+	std::sort(src.begin(), src.end());
+
+	std::vector<PdfMarker*> item_markers = convert_to_marker_vector(convert_to_item_vector(scene->items()));
+	std::sort(item_markers.begin(), item_markers.end());
+
+	std::vector<PdfMarker*> result;
+	std::set_difference(src.begin(), src.end(), item_markers.begin(), item_markers.end(), std::back_inserter(result));
+	return result;
+}
+
+void DocumentPage::create_items()
+{
+	QMutexLocker locker(&m_markermutex);
+
+	std::vector<PdfMarker*> markers = markers_without_item(_markers, graphicsScene());
+	for(PdfMarker* marker : markers)
+		graphicsScene()->addItem(marker->createViewItem(_renderedPage->resolution));
+
+	graphicsScene()->update();
 }
 
 QGraphicsScene* DocumentPage::graphicsScene()
@@ -132,18 +177,25 @@ void DocumentPage::removeMarker(PdfMarker* marker)
 	_markers.erase(std::remove(_markers.begin(), _markers.end(), marker), _markers.end());
 }
 
+PdfMarkerItem* find_corresponding_viewitem(PdfMarker* marker, QGraphicsScene* scene)
+{
+	for(QGraphicsItem *current_item : scene->items())
+	{
+		PdfMarkerItem* converted_item = qgraphicsitem_cast<PdfMarkerItem*>(current_item);
+		if(converted_item && marker == converted_item->marker())
+			return converted_item;
+	}
+
+	return nullptr;
+}
+
 void DocumentPage::removeCorrespondingViewMarker(PdfMarker* marker)
 {
 	if(_renderedPage)
 	{
-		for(QGraphicsItem *current_item : graphicsScene()->items())
-		{
-			PdfMarkerItem* converted_item = qgraphicsitem_cast<PdfMarkerItem*>(current_item);
-			if(converted_item && marker == converted_item->marker())
-			{
-				graphicsScene()->removeItem(current_item);
-			}
-		}
+		PdfMarkerItem *item = find_corresponding_viewitem(marker, graphicsScene());
+		if(item)
+			graphicsScene()->removeItem(item);
 	}
 }
 
@@ -165,20 +217,20 @@ void DocumentPage::removeAllMarkers(bool onlyAutomatic)
 	_markers.erase(it, _markers.end());
 }
 
-void DocumentPage::autoMarkCombined(const DocumentSettings& settings, uint threshold, document_units::centimeter heightThreshold, bool determineVert, bool boundingBox)
+void DocumentPage::automark_combined(automark_settings settings)
 {
 	if(!_renderedPage)
-		_renderedPage = render_page(settings.resolution(), 1.0);
+		_renderedPage = render_page(settings.resolution, 1.0);
 
 
 	if(_renderedPage)
 	{
-		std::vector<document_units::rect<document_units::centimeter>> res = autoMarkCombinedInternal(_renderedPage->image, settings, threshold, heightThreshold, !determineVert, boundingBox, _renderedPage->scale, pageSize());
+		std::vector<document_units::rect<document_units::centimeter>> res = autoMarkCombinedInternal(_renderedPage->image, settings, _renderedPage->scale, pageSize());
 		for(auto rt : res)
 		{
 			PdfMarker *marker = new PdfMarker(this, rt);
 			marker->setAutomaticMarker(true);
-			addMarker(marker);
+			addMarker(marker, true);
 		}
 	}
 }
